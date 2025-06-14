@@ -1,5 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbzC7iIJ9QWWFj_DelXABwGp-5JvDaDWLbRDEN7Wj__DoLTvoRmkqLKow0n09JtdWJdDGg/exec";
-
+const API_URL = "/api/register";
 export async function apiCall(action, data) {
   const res = await fetch(API_URL, {
     method: "POST",
