@@ -1,57 +1,56 @@
-import { useState, useEffect } from "react";
-import { apiCall } from "../utils/api";
+import { useEffect, useState } from "react";
+const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/";
 
 export default function Dashboard() {
   const [tickets, setTickets] = useState([]);
-  const [email, setEmail] = useState(""); // À récupérer depuis le login (stockage localStorage, à améliorer plus tard)
   const [msg, setMsg] = useState("");
 
-  // Simule une authentification (à améliorer avec un vrai système de session)
   useEffect(() => {
-    const userEmail = window.localStorage.getItem("userEmail");
-    setEmail(userEmail || "");
-    if (userEmail) {
-      apiCall("getTickets", { email: userEmail, role: "Client" })
-        .then(res => {
-          if (res.status === "success") setTickets(res.tickets);
-          else setMsg(res.message);
-        });
-    } else {
-      setMsg("Veuillez vous connecter.");
-    }
+    const user = JSON.parse(localStorage.getItem("claimUser"));
+    if (!user) window.location.href = "/login";
+    else fetchTickets(user);
   }, []);
 
+  async function fetchTickets(user) {
+    setMsg("Chargement...");
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "getTickets", email: user.email, role: user.role }),
+      });
+      const data = await res.json();
+      setTickets(data.tickets || []);
+      setMsg("");
+    } catch {
+      setMsg("Erreur de chargement.");
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-violet-600 to-blue-500 p-8">
-      <div className="bg-white rounded-2xl shadow-xl p-8 max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 text-violet-800 text-center">Mes Tickets</h1>
-        {msg && <div className="mb-4 text-center text-red-600">{msg}</div>}
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-violet-100 text-violet-700">
-              <th className="p-2">N°</th>
-              <th className="p-2">Date</th>
-              <th className="p-2">Statut</th>
-              <th className="p-2">Problème</th>
-              <th className="p-2">Transporteur</th>
-              <th className="p-2">Discussion</th>
+    <div className="container py-5">
+      <h2 className="fw-bold mb-4">Mes tickets</h2>
+      <table className="table table-hover table-bordered bg-white shadow">
+        <thead className="table-primary">
+          <tr>
+            <th>ID</th>
+            <th>Date</th>
+            <th>Problème</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tickets.map(t => (
+            <tr key={t.id_ticket}>
+              <td>{t.id_ticket}</td>
+              <td>{t.date_ouverture}</td>
+              <td>{t.problematique}</td>
+              <td>{t.statut}</td>
             </tr>
-          </thead>
-          <tbody>
-            {tickets.map((t, i) => (
-              <tr key={t.id_ticket} className="border-t hover:bg-violet-50">
-                <td className="p-2">{i + 1}</td>
-                <td className="p-2">{t.date_ouverture}</td>
-                <td className="p-2">{t.statut}</td>
-                <td className="p-2">{t.problematique}</td>
-                <td className="p-2">{t.transporteur}</td>
-                <td className="p-2 whitespace-pre-wrap">{t.discussion?.slice(-50)}</td>
-              </tr>
-            ))}
-            {tickets.length === 0 && <tr><td colSpan={6} className="text-center text-gray-400 py-4">Aucun ticket pour le moment</td></tr>}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
+      <div className="text-danger">{msg}</div>
     </div>
   );
 }
