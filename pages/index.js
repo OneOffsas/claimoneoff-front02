@@ -1,19 +1,15 @@
-import Link from 'next/link';
+import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-primary to-secondary flex flex-col items-center justify-center">
-      <div className="bg-white shadow-2xl rounded-3xl p-10 flex flex-col items-center max-w-lg w-full animate-fade-in">
-        <img src="/logo.png" alt="ClaimOneOff" className="w-20 mb-4" />
-        <h1 className="text-4xl font-extrabold text-primary mb-2">ClaimOneOff</h1>
-        <p className="text-gray-700 mb-6 text-center">Votre plateforme ultime de gestion des litiges logistiques e-commerce, <span className="text-secondary font-semibold">design & performance</span>.</p>
-        <div className="flex space-x-4">
-          <Link href="/login">
-            <button className="bg-primary text-white px-6 py-2 rounded-xl font-bold text-lg hover:bg-secondary transition">Se connecter</button>
-          </Link>
-          <Link href="/register">
-            <button className="border-2 border-primary text-primary px-6 py-2 rounded-xl font-bold text-lg hover:bg-primary hover:text-white transition">Créer un compte</button>
-          </Link>
+    <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-tr from-violet-700 via-indigo-600 to-blue-400">
+      <div className="bg-white/90 rounded-3xl shadow-2xl p-10 max-w-md w-full text-center animate-fade-in">
+        <img src="/logo.png" alt="ClaimOneOff" className="mx-auto mb-6 w-24 h-24 rounded-full shadow" />
+        <h1 className="text-3xl font-extrabold text-violet-800 mb-2 font-logo">ClaimOneOff</h1>
+        <p className="text-gray-500 mb-8">Votre plateforme de gestion des litiges logistiques e-commerce, moderne et intuitive.</p>
+        <div className="flex flex-col gap-4">
+          <Link href="/login" className="py-3 px-6 bg-violet-700 hover:bg-violet-900 rounded-xl text-white font-bold shadow transition-all">Se connecter</Link>
+          <Link href="/register" className="py-3 px-6 bg-white border border-violet-700 text-violet-700 hover:bg-violet-700 hover:text-white rounded-xl font-bold shadow transition-all">Créer un compte</Link>
         </div>
       </div>
     </div>
