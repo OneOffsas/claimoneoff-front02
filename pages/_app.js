@@ -1,6 +1,7 @@
 import Head from "next/head";
 import "../styles/globals.css";
-
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap-icons/font/bootstrap-icons.css"; // Pour les icônes stylées !
 function MyApp({ Component, pageProps }) {
   return (
     <>
