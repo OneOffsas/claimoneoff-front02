@@ -1,5 +1,4 @@
 import { useState } from "react";
-
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,46 +29,21 @@ export default function Login() {
   };
 
   return (
-    <div style={{ maxWidth: 400, margin: "40px auto", padding: 20, border: "1px solid #eee", borderRadius: 8 }}>
-      <h2>Connexion</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="email"
-          placeholder="E-mail"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          required
-          style={{ width: "100%", margin: "8px 0", padding: 8 }}
-        />
-        <input
-          type="password"
-          placeholder="Mot de passe"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          required
-          style={{ width: "100%", margin: "8px 0", padding: 8 }}
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            width: "100%",
-            padding: 10,
-            background: "#3b82f6",
-            color: "white",
-            border: "none",
-            borderRadius: 4,
-            marginTop: 12
-          }}
-        >
-          {loading ? "Connexion..." : "Se connecter"}
-        </button>
-      </form>
-      {message && (
-        <div style={{ marginTop: 16, color: message.startsWith("Connexion") ? "green" : "red" }}>
-          {message}
-        </div>
-      )}
+    <div className="centered">
+      <div className="card">
+        <img src="/logo.png" alt="Logo" style={{ width: 80, margin: "0 auto 16px", display: "block" }} />
+        <h2>Connexion</h2>
+        <form onSubmit={handleSubmit}>
+          <input type="email" placeholder="E-mail" value={email} onChange={e => setEmail(e.target.value)} required />
+          <input type="password" placeholder="Mot de passe" value={password} onChange={e => setPassword(e.target.value)} required />
+          <button type="submit" disabled={loading}>
+            {loading ? "Connexion..." : "Se connecter"}
+          </button>
+        </form>
+        {message && (
+          <div style={{ marginTop: 16, color: message.startsWith("Connexion") ? "green" : "red" }}>{message}</div>
+        )}
+      </div>
     </div>
   );
 }
