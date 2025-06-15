@@ -1,6 +1,6 @@
 const { google } = require('googleapis');
 
-// Petit générateur d'ID unique simple pour la démo
+// Générateur d'ID simple
 function makeId(length = 8) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let id = '';
@@ -13,6 +13,16 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Méthode non autorisée" });
   }
 
+  // Ajout du body parser manuel pour Next.js API
+  if (!req.body || typeof req.body !== "object") {
+    let data = "";
+    await new Promise((resolve) => {
+      req.on("data", (chunk) => { data += chunk; });
+      req.on("end", resolve);
+    });
+    req.body = JSON.parse(data || "{}");
+  }
+
   const { societe, nom, prenom, email, password } = req.body;
 
   // Rôle toujours Client, Actif = Oui, etc.
@@ -21,7 +31,7 @@ export default async function handler(req, res) {
   const dateInscription = new Date().toLocaleString('fr-FR');
   const derniereConnexion = "";
 
-  // Optionnel : Ici tu pourrais hasher le mot de passe si tu veux plus de sécurité
+  // Optionnel : Ici tu pourrais hasher le mot de passe pour plus de sécurité
   const motDePasseHash = password; // À remplacer par un vrai hash si besoin
 
   // La clé JSON du service account dans la variable d'env Vercel
