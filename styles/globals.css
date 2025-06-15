@@ -1,53 +1,38 @@
 body {
-  font-family: 'Segoe UI', 'Arial', sans-serif;
-  background: #f4f5fa;
-  color: #232046;
-  margin: 0; padding: 0;
+  margin: 0;
+  font-family: 'Inter', Arial, sans-serif;
+  background: #f7f8fa;
 }
-h1,h2,h3 {
-  color: #4920c2;
+input, select, textarea, button {
+  font-size: 16px;
+  font-family: inherit;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  margin: 6px 0;
+  box-sizing: border-box;
+}
+input:focus, select:focus, textarea:focus {
+  outline: 2px solid #6C47FF;
 }
 button {
-  background: #4920c2; color: #fff;
-  border: none; border-radius: 8px;
-  padding: 10px 20px;
-  font-size: 1rem; cursor: pointer;
-}
-input,select,textarea {
-  padding: 8px;
-  border-radius: 6px;
-  border: 1px solid #cfc9f5;
-  margin: 4px 0 12px 0;
-  width: 100%;
-}
-.card {
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 2px 16px 0 #ddd9f1;
-  margin: 20px auto;
-  padding: 32px;
-  max-width: 600px;
-}
-.logo {
-  height: 48px;
-  margin-bottom: 12px;
-}
-.status {
-  padding: 4px 12px;
+  background: linear-gradient(160deg, #6C47FF, #212155);
+  color: white;
+  padding: 12px 0;
+  border: none;
   border-radius: 8px;
-  font-weight: bold;
+  cursor: pointer;
+  font-weight: 600;
 }
-.status-En\ cours { background: #f0e68c; color: #5b540e; }
-.status-Traité { background: #b1fcbe; color: #16712e; }
-.status-Remboursé { background: #d0f1fd; color: #1b7091; }
-.status-En\ attente { background: #ffd3b1; color: #8c5700; }
-.status-Réclamation\ réalisée\ par\ le\ transporteur { background: #ffd0f6; color: #871d7b; }
-.status-Clos { background: #eeeeee; color: #404040; }
-.status-Refusé { background: #ffb8b8; color: #970000; }
-.urgent-message {
-  background: #ffe6e6; color: #d6001c;
-  font-weight: bold;
-  border: 1px solid #e47171;
-  padding: 10px; border-radius: 8px;
-  margin-bottom: 18px;
-}
+button:disabled { opacity: 0.7; cursor: wait; }
+.centered { display: flex; justify-content: center; align-items: center; min-height: 80vh; }
+.card { background: white; border-radius: 16px; box-shadow: 0 2px 10px #eee; padding: 30px; min-width: 320px; }
+.stat-badge { background: linear-gradient(45deg,#6C47FF,#212155); color: white; border-radius: 24px; padding: 10px 20px; font-size: 1.2em; display: inline-block; margin-right: 8px; }
+.badge { border-radius: 8px; font-size: 0.9em; padding: 4px 12px; color: white; font-weight: bold; }
+.badge.nouveau { background: #6C47FF; }
+.badge.encours { background: #3b82f6; }
+.badge.traite { background: #22c55e; }
+.badge.rembourse { background: #10b981; }
+.badge.attente { background: #eab308; color: #212155; }
+.badge.urgent { background: #ff0040; }
+.main-content { max-width: 1200px; margin: 0 auto; padding: 42px 0; }
