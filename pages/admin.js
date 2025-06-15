@@ -1,150 +1,164 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { FaChartPie, FaListAlt, FaSignOutAlt, FaUsers } from "react-icons/fa";
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from "recharts";
 
-// Fake data pour démo visuelle (remplace par fetch API)
-const DUMMY_STATS = {
-  total: 67,
-  urgents: 8,
-  ouverts: 15,
-  resolus: 48,
-  sla: 92, // pourcentage SLA atteint
-  parMois: [12, 8, 7, 11, 9, 10, 10], // fake
-};
-const COLORS = ["#6C47FF", "#3b82f6", "#ff0040", "#22c55e", "#eab308", "#212155"];
+const COLORS = ["#6C47FF", "#FF5A5F", "#1C75BC", "#22c55e"];
 
-export default function Admin() {
-  const [user, setUser] = useState(null);
-  // ...mets ici ton fetch réel de tickets/stats par API
+const fakeStats = [
+  { name: "Nouveaux", value: 8 },
+  { name: "Urgents", value: 3 },
+  { name: "Ouverts", value: 4 },
+  { name: "Résolus", value: 2 },
+];
 
-  useEffect(() => {
-    const u = localStorage.getItem("user");
-    if (!u) window.location.href = "/login";
-    else {
-      const userObj = JSON.parse(u);
-      if (userObj.role !== "Admin") {
-        window.location.href = "/dashboard";
-        return;
-      }
-      setUser(userObj);
-    }
-  }, []);
+const fakeTickets = [
+  {
+    id: "TCKT1",
+    urgence: "Oui",
+    commande: "1201",
+    probleme: "RETARD",
+    transporteur: "Colissimo",
+    description: "Client non livré",
+    statut: "Nouveau",
+    date: "2025-06-14 09:12",
+    societe: "LaBoîteA",
+    user: "Alexandre",
+  },
+  // Ajoute d'autres tickets ici…
+];
 
-  if (!user) return <div>Chargement...</div>;
+export default function AdminDashboard() {
+  const [menu, setMenu] = useState("dashboard");
 
-  // Demo stat (remplace par vraies stats)
-  const stats = DUMMY_STATS;
+  // Ici tu fetches tes vraies stats/tickets via Apps Script !
 
   return (
-    <div style={{ maxWidth: 1360, margin: "0 auto", padding: "40px 0" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 36 }}>
+    <div className="flex min-h-screen bg-gray-100">
+      {/* Sidebar */}
+      <aside className="w-60 bg-white shadow-xl flex flex-col justify-between py-8 px-5">
         <div>
-          <h2 style={{ color: "#6C47FF", fontWeight: 800, fontSize: 32 }}>🟣 Tableau de bord Admin</h2>
-          <div style={{ color: "#212155", marginTop: 8 }}>Bienvenue sur l'interface pilotage ClaimOneOff</div>
-        </div>
-        <button onClick={() => { localStorage.clear(); window.location.href = "/login"; }} style={{
-          background: "#fff", color: "#6C47FF", border: "1px solid #eee", padding: "10px 26px", borderRadius: 12,
-          fontWeight: 700, fontSize: 16, boxShadow: "0 2px 10px #e0e0f5", cursor: "pointer"
-        }}>Déconnexion</button>
-      </div>
-
-      {/* KPIs haut */}
-      <div style={{ display: "flex", gap: 36, marginBottom: 38, flexWrap: "wrap" }}>
-        <Stat kpi={stats.total} label="Tickets total" color="#6C47FF" />
-        <Stat kpi={stats.urgents} label="Urgents" color="#ff0040" />
-        <Stat kpi={stats.ouverts} label="Ouverts" color="#3b82f6" />
-        <Stat kpi={stats.resolus} label="Résolus" color="#22c55e" />
-        <Stat kpi={`${stats.sla}%`} label="SLA" color="#212155" />
-      </div>
-
-      {/* Graphiques : tickets/mois et statut */}
-      <div style={{ display: "flex", gap: 36, marginBottom: 36, flexWrap: "wrap" }}>
-        <div style={{ background: "#fff", borderRadius: 20, padding: 28, boxShadow: "0 2px 12px #eee", flex: 1, minWidth: 380 }}>
-          <h4 style={{ margin: 0, color: "#6C47FF" }}>Tickets par mois</h4>
-          <BarChart data={stats.parMois} />
-        </div>
-        <div style={{ background: "#fff", borderRadius: 20, padding: 28, boxShadow: "0 2px 12px #eee", flex: 1, minWidth: 380 }}>
-          <h4 style={{ margin: 0, color: "#3b82f6" }}>Répartition Statuts</h4>
-          <DonutChart data={[stats.urgents, stats.ouverts, stats.resolus]} labels={["Urgents", "Ouverts", "Résolus"]} />
-        </div>
-      </div>
-
-      {/* Tableau tickets (mets ici ton tableau dynamique, ou je t’en fais un sur-mesure) */}
-      <div style={{ marginTop: 40 }}>
-        <h3 style={{ color: "#212155", marginBottom: 20 }}>Tickets récents</h3>
-        <div style={{ background: "#fff", borderRadius: 18, boxShadow: "0 2px 8px #eee", padding: 18 }}>
-          {/* Ici place ton tableau dynamique existant, tu peux demander une version ultra design/tableau avancé, je livre ! */}
-          <div style={{ textAlign: "center", color: "#999", fontSize: 18 }}>➡️ Tableau interactif tickets (filtres, search, etc. ici)</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Stat({ kpi, label, color }) {
-  return (
-    <div className="card" style={{
-      minWidth: 180, textAlign: "center", borderBottom: `5px solid ${color}`,
-      borderRadius: 20, boxShadow: "0 2px 10px #e0e0f5", background: "#fff"
-    }}>
-      <div style={{ fontSize: 38, fontWeight: 800, color }}>{kpi}</div>
-      <div style={{ color, fontWeight: 700, fontSize: 18 }}>{label}</div>
-    </div>
-  );
-}
-
-function BarChart({ data }) {
-  // Un mini graphique barres stylisé
-  const max = Math.max(...data);
-  return (
-    <div style={{ display: "flex", alignItems: "end", height: 88, gap: 16, marginTop: 18 }}>
-      {data.map((val, i) => (
-        <div key={i} style={{
-          width: 32, height: `${(val / max) * 80 + 8}px`,
-          background: COLORS[i % COLORS.length], borderRadius: 8, textAlign: "center",
-          transition: "height 0.3s"
-        }}>
-          <span style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>{val}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function DonutChart({ data, labels }) {
-  // Graphique donut simplifié (remplace par une vraie lib graphique si tu veux)
-  const total = data.reduce((a, b) => a + b, 0) || 1;
-  const percents = data.map(x => Math.round((x / total) * 100));
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 20, marginTop: 18 }}>
-      <svg width="80" height="80" viewBox="0 0 42 42" style={{ transform: "rotate(-90deg)" }}>
-        {data.map((val, i) => {
-          const r = 16, c = 2 * Math.PI * r;
-          const offset = data.slice(0, i).reduce((acc, v) => acc + (v / total) * c, 0);
-          return (
-            <circle
-              key={i}
-              r={r}
-              cx={21}
-              cy={21}
-              fill="transparent"
-              stroke={COLORS[i % COLORS.length]}
-              strokeWidth="6"
-              strokeDasharray={`${(val / total) * c} ${c}`}
-              strokeDashoffset={-offset}
-            />
-          );
-        })}
-      </svg>
-      <div>
-        {labels.map((lab, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{
-              width: 16, height: 16, borderRadius: 8, background: COLORS[i % COLORS.length], display: "inline-block"
-            }} />
-            <span style={{ fontWeight: 700, color: COLORS[i % COLORS.length] }}>{lab}</span>
-            <span style={{ color: "#999", marginLeft: 2 }}>{data[i]} ({percents[i]}%)</span>
+          <div className="mb-10 flex items-center">
+            <img src="/logo.png" alt="logo" className="w-10 h-10 mr-2" />
+            <span className="text-xl font-bold text-violet-700 tracking-tight">ClaimOneOff</span>
           </div>
-        ))}
+          <nav className="flex flex-col gap-2">
+            <SidebarBtn icon={<FaChartPie />} label="Dashboard" active={menu === "dashboard"} onClick={() => setMenu("dashboard")} />
+            <SidebarBtn icon={<FaListAlt />} label="Tickets" active={menu === "tickets"} onClick={() => setMenu("tickets")} />
+            <SidebarBtn icon={<FaUsers />} label="Clients" active={menu === "clients"} onClick={() => setMenu("clients")} />
+          </nav>
+        </div>
+        <button className="flex items-center gap-2 text-violet-700 font-semibold px-3 py-2 rounded-md bg-violet-50 hover:bg-violet-100 transition">
+          <FaSignOutAlt />
+          Déconnexion
+        </button>
+      </aside>
+      {/* Main */}
+      <main className="flex-1 p-10">
+        {menu === "dashboard" && <DashboardSection />}
+        {menu === "tickets" && <TicketsSection />}
+        {menu === "clients" && <ClientsSection />}
+      </main>
+    </div>
+  );
+}
+
+function SidebarBtn({ icon, label, active, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-3 px-3 py-2 rounded-md transition font-medium text-lg ${
+        active ? "bg-violet-100 text-violet-700" : "text-gray-700 hover:bg-gray-200"
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+// Dashboard principal avec graphique
+function DashboardSection() {
+  return (
+    <div>
+      <h2 className="text-2xl font-bold mb-8">Tableau de bord</h2>
+      <div className="flex gap-8 mb-10">
+        <ResponsiveContainer width="30%" height={160}>
+          <PieChart>
+            <Pie data={fakeStats} dataKey="value" nameKey="name" innerRadius={40} outerRadius={60}>
+              {fakeStats.map((entry, idx) => (
+                <Cell key={`cell-${idx}`} fill={COLORS[idx % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip />
+          </PieChart>
+        </ResponsiveContainer>
+        <div className="flex flex-col gap-3 justify-center">
+          {fakeStats.map((s, idx) => (
+            <div key={s.name} className="flex items-center gap-3">
+              <span className="w-3 h-3 rounded-full" style={{ background: COLORS[idx % COLORS.length] }}></span>
+              <span className="font-semibold text-gray-700">{s.name} :</span>
+              <span className="font-bold text-xl">{s.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Ici tu ajoutes d’autres graphiques ou stats ! */}
+    </div>
+  );
+}
+
+// Tickets : tableau dynamique
+function TicketsSection() {
+  return (
+    <div>
+      <h2 className="text-2xl font-bold mb-8">Tous les tickets</h2>
+      <div className="overflow-x-auto bg-white shadow rounded-lg">
+        <table className="min-w-full">
+          <thead>
+            <tr className="bg-gray-50">
+              <th className="px-3 py-2">ID</th>
+              <th>Urgence</th>
+              <th>Commande</th>
+              <th>Problème</th>
+              <th>Transporteur</th>
+              <th>Description</th>
+              <th>Statut</th>
+              <th>Date</th>
+              <th>Client</th>
+              <th>Utilisateur</th>
+            </tr>
+          </thead>
+          <tbody>
+            {fakeTickets.map((t, idx) => (
+              <tr key={t.id} className={idx % 2 ? "bg-gray-50" : ""}>
+                <td className="px-3 py-2">{t.id}</td>
+                <td>{t.urgence === "Oui" ? <span className="px-2 py-1 rounded bg-red-100 text-red-700 font-semibold">Urgent</span> : ""}</td>
+                <td>{t.commande}</td>
+                <td>{t.probleme}</td>
+                <td>{t.transporteur}</td>
+                <td>{t.description}</td>
+                <td>
+                  <span className="px-2 py-1 rounded bg-violet-500 text-white font-bold">{t.statut}</span>
+                </td>
+                <td>{t.date}</td>
+                <td>{t.societe}</td>
+                <td>{t.user}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 }
+
+// Clients : bientôt
+function ClientsSection() {
+  return (
+    <div>
+      <h2 className="text-2xl font-bold mb-6">Gestion des clients</h2>
+      <p>À venir : visualisation, gestion utilisateurs/clients, stats par client, etc.</p>
+    </div>
+  );
+}
+
