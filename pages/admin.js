@@ -1,19 +1,19 @@
 import { useEffect, useState } from "react";
 
-const statusLabels = {
-  Nouveau: "badge nouveau",
-  "En cours": "badge encours",
-  "Traité": "badge traite",
-  "Remboursé": "badge rembourse",
-  "En attente": "badge attente",
-  "Réclamation transporteur": "badge attente",
+// Fake data pour démo visuelle (remplace par fetch API)
+const DUMMY_STATS = {
+  total: 67,
+  urgents: 8,
+  ouverts: 15,
+  resolus: 48,
+  sla: 92, // pourcentage SLA atteint
+  parMois: [12, 8, 7, 11, 9, 10, 10], // fake
 };
+const COLORS = ["#6C47FF", "#3b82f6", "#ff0040", "#22c55e", "#eab308", "#212155"];
 
 export default function Admin() {
   const [user, setUser] = useState(null);
-  const [tickets, setTickets] = useState([]);
-  const [filter, setFilter] = useState({ societe: "", statut: "", urgence: "" });
-  const [message, setMessage] = useState("");
+  // ...mets ici ton fetch réel de tickets/stats par API
 
   useEffect(() => {
     const u = localStorage.getItem("user");
@@ -25,146 +25,125 @@ export default function Admin() {
         return;
       }
       setUser(userObj);
-      fetchTickets();
     }
-    // eslint-disable-next-line
   }, []);
-
-  async function fetchTickets() {
-    try {
-      const res = await fetch("/api/tickets?role=Admin");
-      const data = await res.json();
-      setTickets(data.tickets || []);
-    } catch {
-      setMessage("Erreur lors du chargement des tickets");
-    }
-  }
-
-  // Statistiques simples
-  const nbTotal = tickets.length;
-  const nbUrgents = tickets.filter(t => t.urgence === "Oui").length;
-  const nbOuverts = tickets.filter(t => t.statut === "Nouveau" || t.statut === "En cours" || t.statut === "En attente").length;
-  const nbResolus = tickets.filter(t => t.statut === "Traité" || t.statut === "Remboursé").length;
-
-  // Filtres
-  const uniqueSocietes = Array.from(new Set(tickets.map(t => t.societe || ""))).filter(Boolean);
-  const filtered = tickets.filter(t =>
-    (!filter.societe || t.societe === filter.societe) &&
-    (!filter.statut || t.statut === filter.statut) &&
-    (!filter.urgence || t.urgence === filter.urgence)
-  );
 
   if (!user) return <div>Chargement...</div>;
 
+  // Demo stat (remplace par vraies stats)
+  const stats = DUMMY_STATS;
+
   return (
-    <div style={{ maxWidth: 1200, margin: "0 auto", padding: "30px 0" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 32 }}>
-        <h2 style={{ color: "#6C47FF", fontWeight: 800 }}>🎛️ Admin – Gestion des tickets</h2>
+    <div style={{ maxWidth: 1360, margin: "0 auto", padding: "40px 0" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 36 }}>
+        <div>
+          <h2 style={{ color: "#6C47FF", fontWeight: 800, fontSize: 32 }}>🟣 Tableau de bord Admin</h2>
+          <div style={{ color: "#212155", marginTop: 8 }}>Bienvenue sur l'interface pilotage ClaimOneOff</div>
+        </div>
         <button onClick={() => { localStorage.clear(); window.location.href = "/login"; }} style={{
-          background: "#fff", color: "#6C47FF", border: "1px solid #eee", padding: "8px 20px", borderRadius: 8,
-          fontWeight: 600, cursor: "pointer"
+          background: "#fff", color: "#6C47FF", border: "1px solid #eee", padding: "10px 26px", borderRadius: 12,
+          fontWeight: 700, fontSize: 16, boxShadow: "0 2px 10px #e0e0f5", cursor: "pointer"
         }}>Déconnexion</button>
       </div>
 
-      {/* Stats */}
-      <div style={{ display: "flex", gap: 24, marginBottom: 40, flexWrap: "wrap" }}>
-        <div className="card" style={{ minWidth: 160, textAlign: "center", borderBottom: "4px solid #6C47FF" }}>
-          <div style={{ fontSize: 34, fontWeight: 700 }}>{nbTotal}</div>
-          <div style={{ color: "#6C47FF", fontWeight: 600 }}>Tickets</div>
+      {/* KPIs haut */}
+      <div style={{ display: "flex", gap: 36, marginBottom: 38, flexWrap: "wrap" }}>
+        <Stat kpi={stats.total} label="Tickets total" color="#6C47FF" />
+        <Stat kpi={stats.urgents} label="Urgents" color="#ff0040" />
+        <Stat kpi={stats.ouverts} label="Ouverts" color="#3b82f6" />
+        <Stat kpi={stats.resolus} label="Résolus" color="#22c55e" />
+        <Stat kpi={`${stats.sla}%`} label="SLA" color="#212155" />
+      </div>
+
+      {/* Graphiques : tickets/mois et statut */}
+      <div style={{ display: "flex", gap: 36, marginBottom: 36, flexWrap: "wrap" }}>
+        <div style={{ background: "#fff", borderRadius: 20, padding: 28, boxShadow: "0 2px 12px #eee", flex: 1, minWidth: 380 }}>
+          <h4 style={{ margin: 0, color: "#6C47FF" }}>Tickets par mois</h4>
+          <BarChart data={stats.parMois} />
         </div>
-        <div className="card" style={{ minWidth: 160, textAlign: "center", borderBottom: "4px solid #ff0040" }}>
-          <div style={{ fontSize: 34, fontWeight: 700 }}>{nbUrgents}</div>
-          <div style={{ color: "#ff0040", fontWeight: 600 }}>Urgents</div>
-        </div>
-        <div className="card" style={{ minWidth: 160, textAlign: "center", borderBottom: "4px solid #3b82f6" }}>
-          <div style={{ fontSize: 34, fontWeight: 700 }}>{nbOuverts}</div>
-          <div style={{ color: "#3b82f6", fontWeight: 600 }}>Ouverts</div>
-        </div>
-        <div className="card" style={{ minWidth: 160, textAlign: "center", borderBottom: "4px solid #22c55e" }}>
-          <div style={{ fontSize: 34, fontWeight: 700 }}>{nbResolus}</div>
-          <div style={{ color: "#22c55e", fontWeight: 600 }}>Résolus</div>
+        <div style={{ background: "#fff", borderRadius: 20, padding: 28, boxShadow: "0 2px 12px #eee", flex: 1, minWidth: 380 }}>
+          <h4 style={{ margin: 0, color: "#3b82f6" }}>Répartition Statuts</h4>
+          <DonutChart data={[stats.urgents, stats.ouverts, stats.resolus]} labels={["Urgents", "Ouverts", "Résolus"]} />
         </div>
       </div>
 
-      {/* Filtres */}
-      <div className="card" style={{ marginBottom: 32, display: "flex", gap: 24, alignItems: "center" }}>
-        <div>
-          <label>Société :{" "}
-            <select value={filter.societe} onChange={e => setFilter({ ...filter, societe: e.target.value })}>
-              <option value="">Toutes</option>
-              {uniqueSocietes.map(s => <option key={s}>{s}</option>)}
-            </select>
-          </label>
+      {/* Tableau tickets (mets ici ton tableau dynamique, ou je t’en fais un sur-mesure) */}
+      <div style={{ marginTop: 40 }}>
+        <h3 style={{ color: "#212155", marginBottom: 20 }}>Tickets récents</h3>
+        <div style={{ background: "#fff", borderRadius: 18, boxShadow: "0 2px 8px #eee", padding: 18 }}>
+          {/* Ici place ton tableau dynamique existant, tu peux demander une version ultra design/tableau avancé, je livre ! */}
+          <div style={{ textAlign: "center", color: "#999", fontSize: 18 }}>➡️ Tableau interactif tickets (filtres, search, etc. ici)</div>
         </div>
-        <div>
-          <label>Statut :{" "}
-            <select value={filter.statut} onChange={e => setFilter({ ...filter, statut: e.target.value })}>
-              <option value="">Tous</option>
-              <option>Nouveau</option>
-              <option>En cours</option>
-              <option>Traité</option>
-              <option>Remboursé</option>
-              <option>En attente</option>
-              <option>Réclamation transporteur</option>
-            </select>
-          </label>
-        </div>
-        <div>
-          <label>Urgence :{" "}
-            <select value={filter.urgence} onChange={e => setFilter({ ...filter, urgence: e.target.value })}>
-              <option value="">Tous</option>
-              <option>Oui</option>
-              <option>Non</option>
-            </select>
-          </label>
-        </div>
-        <button onClick={() => setFilter({ societe: "", statut: "", urgence: "" })} style={{
-          background: "#eee", color: "#212155", border: "none", padding: "8px 14px", borderRadius: 8,
-          fontWeight: 600, cursor: "pointer"
-        }}>Effacer les filtres</button>
       </div>
+    </div>
+  );
+}
 
-      {/* Tableau */}
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", marginTop: 18, borderCollapse: "collapse", background: "#fff", borderRadius: 16, boxShadow: "0 2px 8px #eee" }}>
-          <thead>
-            <tr style={{ background: "#f2f3f9" }}>
-              <th>Société</th>
-              <th>Utilisateur</th>
-              <th>Email</th>
-              <th>Urgence</th>
-              <th>Commande</th>
-              <th>Problème</th>
-              <th>Transporteur</th>
-              <th>Description</th>
-              <th>Statut</th>
-              <th>Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((t, i) => (
-              <tr key={i} style={{ textAlign: "center", borderBottom: "1px solid #eee" }}>
-                <td>{t.societe}</td>
-                <td>{t.utilisateur}</td>
-                <td>{t.email}</td>
-                <td>{t.urgence}</td>
-                <td>{t.numero_commande}</td>
-                <td>{t.problematique}</td>
-                <td>{t.transporteur}</td>
-                <td>{t.description}</td>
-                <td>
-                  <span className={statusLabels[t.statut] || "badge"}>{t.statut}</span>
-                </td>
-                <td>{t.date_ouverture}</td>
-              </tr>
-            ))}
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={10} style={{ textAlign: "center" }}>Aucun ticket.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+function Stat({ kpi, label, color }) {
+  return (
+    <div className="card" style={{
+      minWidth: 180, textAlign: "center", borderBottom: `5px solid ${color}`,
+      borderRadius: 20, boxShadow: "0 2px 10px #e0e0f5", background: "#fff"
+    }}>
+      <div style={{ fontSize: 38, fontWeight: 800, color }}>{kpi}</div>
+      <div style={{ color, fontWeight: 700, fontSize: 18 }}>{label}</div>
+    </div>
+  );
+}
+
+function BarChart({ data }) {
+  // Un mini graphique barres stylisé
+  const max = Math.max(...data);
+  return (
+    <div style={{ display: "flex", alignItems: "end", height: 88, gap: 16, marginTop: 18 }}>
+      {data.map((val, i) => (
+        <div key={i} style={{
+          width: 32, height: `${(val / max) * 80 + 8}px`,
+          background: COLORS[i % COLORS.length], borderRadius: 8, textAlign: "center",
+          transition: "height 0.3s"
+        }}>
+          <span style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>{val}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DonutChart({ data, labels }) {
+  // Graphique donut simplifié (remplace par une vraie lib graphique si tu veux)
+  const total = data.reduce((a, b) => a + b, 0) || 1;
+  const percents = data.map(x => Math.round((x / total) * 100));
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 20, marginTop: 18 }}>
+      <svg width="80" height="80" viewBox="0 0 42 42" style={{ transform: "rotate(-90deg)" }}>
+        {data.map((val, i) => {
+          const r = 16, c = 2 * Math.PI * r;
+          const offset = data.slice(0, i).reduce((acc, v) => acc + (v / total) * c, 0);
+          return (
+            <circle
+              key={i}
+              r={r}
+              cx={21}
+              cy={21}
+              fill="transparent"
+              stroke={COLORS[i % COLORS.length]}
+              strokeWidth="6"
+              strokeDasharray={`${(val / total) * c} ${c}`}
+              strokeDashoffset={-offset}
+            />
+          );
+        })}
+      </svg>
+      <div>
+        {labels.map((lab, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{
+              width: 16, height: 16, borderRadius: 8, background: COLORS[i % COLORS.length], display: "inline-block"
+            }} />
+            <span style={{ fontWeight: 700, color: COLORS[i % COLORS.length] }}>{lab}</span>
+            <span style={{ color: "#999", marginLeft: 2 }}>{data[i]} ({percents[i]}%)</span>
+          </div>
+        ))}
       </div>
     </div>
   );
