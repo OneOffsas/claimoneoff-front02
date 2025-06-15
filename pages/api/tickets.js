@@ -1,6 +1,6 @@
 const { google } = require('googleapis');
 
-// Génère un ID simple (AAA12345)
+// Générateur d'ID unique simple
 function makeId(length = 8) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let id = '';
@@ -21,25 +21,59 @@ export default async function handler(req, res) {
   const sheetName = "Tickets_ClaimOneOff";
 
   if (req.method === "POST") {
-    // Création d'un ticket
     let body = req.body;
     if (!body || typeof body !== "object") {
       try { body = JSON.parse(req?.body ?? "{}"); } catch (e) { body = {}; }
     }
-    const { sujet, description, email, societe, nom, prenom } = body;
+
+    // Récupération des données envoyées
+    const {
+      societe,
+      utilisateur,
+      email,
+      role,
+      urgence,
+      numero_commande,
+      sla_cible,
+      problematique,
+      transporteur,
+      description,
+      fichiers_joints,
+      discussion,
+      priorite,
+      type_action,
+      delai_resolution,
+      facturation
+    } = body;
+
     try {
       await sheets.spreadsheets.values.append({
         spreadsheetId,
-        range: `${sheetName}!A:F`,
+        range: `${sheetName}!A:T`,
         valueInputOption: "USER_ENTERED",
         requestBody: {
           values: [[
-            makeId(),      // id ticket
-            sujet,         // sujet
-            description,   // description
-            "Nouveau",     // status
-            email,         // créé par
-            new Date().toLocaleString('fr-FR')
+            makeId(),                  // ID_Ticket (A)
+            societe || "",             // Societe (B)
+            utilisateur || "",         // Utilisateur (C)
+            email || "",               // Email (D)
+            role || "Client",          // Role (E)
+            new Date().toLocaleString('fr-FR'), // Date_Ouverture (F)
+            urgence || "Non",          // Urgence (G)
+            numero_commande || "",     // Numero_Commande (H)
+            sla_cible || "",           // SLA_Cible (I)
+            problematique || "",       // Problematique (J)
+            transporteur || "",        // Transporteur (K)
+            description || "",         // Description (L)
+            fichiers_joints || "",     // Fichiers_Joints (M)
+            discussion || "",          // Discussion (N)
+            "Nouveau",                 // Statut (O)
+            new Date().toLocaleString('fr-FR'), // Date_MAJ (P)
+            priorite || "",            // Priorite (Q)
+            type_action || "",         // Type_Action (R)
+            delai_resolution || "",    // Delai_Resolution (S)
+            facturation || ""          // Facturation (T)
+            // ...ajoute ici des champs si tu ajoutes d'autres colonnes ensuite
           ]]
         }
       });
@@ -55,15 +89,29 @@ export default async function handler(req, res) {
     try {
       const resp = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: `${sheetName}!A2:F`,
+        range: `${sheetName}!A2:T`, // A2:T pour couvrir toutes tes colonnes
       });
       let tickets = (resp.data.values || []).map(r => ({
-        id: r[0],
-        sujet: r[1],
-        description: r[2],
-        status: r[3],
-        email: r[4],
-        date: r[5]
+        id: r[0],                // ID_Ticket
+        societe: r[1],
+        utilisateur: r[2],
+        email: r[3],
+        role: r[4],
+        date_ouverture: r[5],
+        urgence: r[6],
+        numero_commande: r[7],
+        sla_cible: r[8],
+        problematique: r[9],
+        transporteur: r[10],
+        description: r[11],
+        fichiers_joints: r[12],
+        discussion: r[13],
+        statut: r[14],
+        date_maj: r[15],
+        priorite: r[16],
+        type_action: r[17],
+        delai_resolution: r[18],
+        facturation: r[19],
       }));
       // Si client, filtre ses tickets seulement
       if (role !== "Admin") {
@@ -75,6 +123,5 @@ export default async function handler(req, res) {
     }
   }
 
-  // Méthode non autorisée
   return res.status(405).json({ error: "Méthode non autorisée" });
 }
