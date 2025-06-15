@@ -7,10 +7,13 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: "#6c2eb9", // Violet ClaimOneOff
-        secondary: "#182454", // Bleu foncé
-        accent: "#7e57c2", // Cube violet/bleu
+        primary: '#6D28D9',
+        accent: '#4F46E5',
+        'bg-light': '#F4F4FB',
       },
+      fontFamily: {
+        logo: ['Montserrat', 'Arial', 'sans-serif'],
+      }
     },
   },
   plugins: [],
