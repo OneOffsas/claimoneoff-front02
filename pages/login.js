@@ -1,78 +1,51 @@
 import { useState } from "react";
-import { API_URL } from "../utils/api";
-import Head from "next/head";
-import Link from "next/link";
+import { useRouter } from "next/router";
+
+const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [form, setForm] = useState({ email: "", password: "" });
   const [msg, setMsg] = useState("");
-  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   async function handleLogin(e) {
     e.preventDefault();
-    setLoading(true);
-    setMsg("");
+    setMsg("Connexion en cours...");
     try {
       const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "login", email, password }),
+        body: JSON.stringify({ action: "login", ...form }),
       });
       const data = await res.json();
       if (data.status === "success") {
-        // Redirection intelligente selon le rôle
+        setMsg("Connexion réussie !");
+        localStorage.setItem("user", JSON.stringify(data));
         if (data.role === "Admin") {
-          window.location.href = "/admin";
+          router.push("/admin");
         } else {
-          window.location.href = "/dashboard";
+          router.push("/dashboard");
         }
       } else {
-        setMsg(data.message || "Erreur de connexion");
+        setMsg("❌ " + (data.message || "Erreur inconnue."));
       }
     } catch {
-      setMsg("Erreur réseau.");
+      setMsg("❌ Erreur réseau, merci de réessayer.");
     }
-    setLoading(false);
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-violet-700 to-blue-600">
-      <Head><title>Connexion | ClaimOneOff</title></Head>
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md animate-fade-in">
+    <div className="min-h-screen bg-gradient-to-tr from-primary to-secondary flex items-center justify-center">
+      <form className="bg-white rounded-3xl shadow-2xl p-10 max-w-sm w-full animate-fade-in" onSubmit={handleLogin}>
         <div className="flex justify-center mb-4">
           <img src="/logo.png" alt="ClaimOneOff" className="w-20 h-20" />
         </div>
-        <h2 className="text-2xl font-bold text-violet-700 text-center mb-4">Connexion</h2>
-        <form onSubmit={handleLogin}>
-          <input
-            className="border p-2 mb-4 w-full rounded"
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-          />
-          <input
-            className="border p-2 mb-4 w-full rounded"
-            type="password"
-            placeholder="Mot de passe"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-          />
-          <button
-            className="w-full bg-violet-700 text-white py-2 rounded hover:bg-violet-900 transition font-semibold mb-2"
-            disabled={loading}
-          >
-            {loading ? "Connexion..." : "Se connecter"}
-          </button>
-        </form>
-        <div className="text-sm text-center mt-2 text-gray-500">
-          <Link href="/register" className="text-violet-700 underline">Créer un compte</Link>
-        </div>
-        {msg && <div className="mt-3 text-sm text-center text-red-500">{msg}</div>}
-      </div>
+        <h2 className="text-3xl font-extrabold text-center text-primary mb-5">Connexion</h2>
+        <input className="border border-gray-300 p-3 mb-4 w-full rounded-xl focus:ring-2 focus:ring-primary" type="email" placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required />
+        <input className="border border-gray-300 p-3 mb-4 w-full rounded-xl focus:ring-2 focus:ring-primary" type="password" placeholder="Mot de passe" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} required />
+        <button className="w-full bg-primary text-white py-3 rounded-xl hover:bg-secondary font-bold transition">Se connecter</button>
+        <div className="mt-4 text-center text-gray-600">{msg}</div>
+      </form>
     </div>
   );
 }
