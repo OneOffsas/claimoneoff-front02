@@ -1,5 +1,4 @@
 import { useState } from "react";
-
 export default function Register() {
   const [societe, setSociete] = useState("");
   const [nom, setNom] = useState("");
@@ -17,22 +16,12 @@ export default function Register() {
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          societe,
-          nom,
-          prenom,
-          email,
-          password,
-        }),
+        body: JSON.stringify({ societe, nom, prenom, email, password }),
       });
       const data = await res.json();
       if (data.status === "success") {
         setMessage("Compte créé avec succès !");
-        setSociete("");
-        setNom("");
-        setPrenom("");
-        setEmail("");
-        setPassword("");
+        setSociete(""); setNom(""); setPrenom(""); setEmail(""); setPassword("");
       } else {
         setMessage(data.message || "Erreur lors de la création du compte");
       }
@@ -43,72 +32,24 @@ export default function Register() {
   };
 
   return (
-    <div style={{ maxWidth: 400, margin: "40px auto", padding: 20, border: "1px solid #eee", borderRadius: 8 }}>
-      <h2>Créer un compte</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          placeholder="Société"
-          value={societe}
-          onChange={(e) => setSociete(e.target.value)}
-          required
-          style={{ width: "100%", margin: "8px 0", padding: 8 }}
-        />
-        <input
-          placeholder="Nom"
-          value={nom}
-          onChange={(e) => setNom(e.target.value)}
-          required
-          style={{ width: "100%", margin: "8px 0", padding: 8 }}
-        />
-        <input
-          placeholder="Prénom"
-          value={prenom}
-          onChange={(e) => setPrenom(e.target.value)}
-          required
-          style={{ width: "100%", margin: "8px 0", padding: 8 }}
-        />
-        <input
-          type="email"
-          placeholder="E-mail"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          style={{ width: "100%", margin: "8px 0", padding: 8 }}
-        />
-        <input
-          type="password"
-          placeholder="Mot de passe"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          style={{ width: "100%", margin: "8px 0", padding: 8 }}
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            width: "100%",
-            padding: 10,
-            background: "#3b82f6",
-            color: "white",
-            border: "none",
-            borderRadius: 4,
-            marginTop: 12
-          }}
-        >
-          {loading ? "Création en cours..." : "Créer mon compte"}
-        </button>
-      </form>
-      {message && (
-        <div
-          style={{
-            marginTop: 16,
-            color: message.startsWith("Compte") ? "green" : "red"
-          }}
-        >
-          {message}
-        </div>
-      )}
+    <div className="centered">
+      <div className="card">
+        <img src="/logo.png" alt="Logo" style={{ width: 80, margin: "0 auto 16px", display: "block" }} />
+        <h2>Créer un compte</h2>
+        <form onSubmit={handleSubmit}>
+          <input placeholder="Société" value={societe} onChange={e => setSociete(e.target.value)} required />
+          <input placeholder="Nom" value={nom} onChange={e => setNom(e.target.value)} required />
+          <input placeholder="Prénom" value={prenom} onChange={e => setPrenom(e.target.value)} required />
+          <input type="email" placeholder="E-mail" value={email} onChange={e => setEmail(e.target.value)} required />
+          <input type="password" placeholder="Mot de passe" value={password} onChange={e => setPassword(e.target.value)} required />
+          <button type="submit" disabled={loading}>
+            {loading ? "Création en cours..." : "Créer mon compte"}
+          </button>
+        </form>
+        {message && (
+          <div style={{ marginTop: 16, color: message.startsWith("Compte") ? "green" : "red" }}>{message}</div>
+        )}
+      </div>
     </div>
   );
 }
