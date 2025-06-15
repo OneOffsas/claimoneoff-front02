@@ -6,7 +6,6 @@ export default function Register() {
   const [prenom, setPrenom] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("Client");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -18,12 +17,22 @@ export default function Register() {
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ societe, nom, prenom, email, password, role }),
+        body: JSON.stringify({
+          societe,
+          nom,
+          prenom,
+          email,
+          password
+        }),
       });
       const data = await res.json();
       if (data.status === "success") {
         setMessage("Compte créé avec succès !");
-        setSociete(""); setNom(""); setPrenom(""); setEmail(""); setPassword("");
+        setSociete("");
+        setNom("");
+        setPrenom("");
+        setEmail("");
+        setPassword("");
       } else {
         setMessage(data.message || "Erreur lors de la création du compte");
       }
@@ -74,15 +83,33 @@ export default function Register() {
           required
           style={{ width: "100%", margin: "8px 0", padding: 8 }}
         />
-        <select value={role} onChange={(e) => setRole(e.target.value)} style={{ width: "100%", margin: "8px 0", padding: 8 }}>
-          <option value="Client">Client</option>
-          <option value="Admin">Admin</option>
-        </select>
-        <button type="submit" disabled={loading} style={{ width: "100%", padding: 10, background: "#3b82f6", color: "white", border: "none", borderRadius: 4 }}>
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            width: "100%",
+            padding: 10,
+            background: "#3b82f6",
+            color: "white",
+            border: "none",
+            borderRadius: 4,
+            marginTop: 12
+          }}
+        >
           {loading ? "Création en cours..." : "Créer mon compte"}
         </button>
       </form>
-      {message && <div style={{ marginTop: 16, color: message.startsWith("Compte") ? "green" : "red" }}>{message}</div>}
+      {message && (
+        <div
+          style={{
+            marginTop: 16,
+            color: message.startsWith("Compte") ? "green" : "red"
+          }}
+        >
+          {message}
+        </div>
+      )}
     </div>
   );
 }
+
