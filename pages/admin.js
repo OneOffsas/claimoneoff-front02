@@ -1,124 +1,100 @@
+import Sidebar from "../components/Sidebar";
 import { useEffect, useState } from "react";
+
 const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/";
 
-export default function Admin() {
+export default function Dashboard() {
+  const [user, setUser] = useState(null);
   const [tickets, setTickets] = useState([]);
-  const [msg, setMsg] = useState("");
-  const user = typeof window !== "undefined" && JSON.parse(localStorage.getItem("claimUser"));
+  const [stats, setStats] = useState({total: 0, ouverts: 0, urgents: 0});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user || user.role !== "Admin") window.location.href = "/login";
-    else fetchTickets();
-    // eslint-disable-next-line
-  }, []);
-
-  async function fetchTickets() {
-    setMsg("Chargement...");
-    try {
-      const res = await fetch(API_URL, {
+    const userLocal = JSON.parse(localStorage.getItem("claimUser"));
+    setUser(userLocal);
+    if (userLocal) {
+      fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "getTickets", email: user.email, role: user.role }),
+        body: JSON.stringify({action: "getTickets", email: userLocal.email, role: userLocal.role})
+      })
+      .then(r => r.json())
+      .then(data => {
+        setTickets(data.tickets || []);
+        setStats({
+          total: (data.tickets||[]).length,
+          ouverts: (data.tickets||[]).filter(t => t.statut==="En cours").length,
+          urgents: (data.tickets||[]).filter(t => t.urgence==="Oui").length
+        });
+        setLoading(false);
       });
-      const data = await res.json();
-      setTickets(data.tickets || []);
-      setMsg("");
-    } catch {
-      setMsg("Erreur de chargement.");
     }
-  }
+  }, []);
 
-  // Statistiques
-  const totalTickets = tickets.length;
-  const ticketsOuverts = tickets.filter(t => t.statut !== "Clos").length;
-  const ticketsUrgents = tickets.filter(t => t.urgence && t.urgence.toLowerCase() === "oui").length;
+  if (!user) return <div>Connexion requise.</div>;
 
   return (
-    <div className="d-flex" style={{minHeight:"100vh",background:"#f4f8fd"}}>
-      {/* Sidebar */}
-      <div className="sidebar-custom p-4 d-none d-md-flex flex-column" style={{width:240, background:"#322d53", color:"#fff", borderRadius:"0 24px 24px 0"}}>
-        <div className="fs-4 mb-5 text-center fw-bold">ClaimOneOff</div>
-        <div className="mb-2 menu-item-active p-2 rounded" style={{background:"#6959c7",fontWeight:"bold"}}>Tickets</div>
-        <a href="/" className="text-light mt-3 text-decoration-none small">Accueil</a>
-        <div className="mt-auto pt-5 text-secondary small">
-          {user && user.prenom} {user && user.nom}<br />
-          <span className="text-light">{user && user.societe}</span>
-        </div>
-      </div>
-      {/* Main */}
-      <div className="flex-grow-1 p-4">
-        <div className="d-md-none mb-3">
-          <div className="brand fs-5 text-primary">ClaimOneOff</div>
-        </div>
-        <h2 className="fw-bold mb-2" style={{color:"#322d53"}}>Dashboard admin</h2>
-        <div className="row mb-4 g-3">
-          <div className="col-12 col-md-4">
-            <div className="card text-center shadow border-0" style={{borderRadius:18}}>
-              <div className="card-body">
-                <div className="fw-bold fs-2 text-primary">{totalTickets}</div>
-                <div className="text-muted">Tickets créés</div>
-              </div>
+    <div className="d-flex" style={{minHeight:"100vh"}}>
+      <Sidebar role={user.role} active="dashboard"/>
+      <div className="container-fluid p-5" style={{background:"linear-gradient(120deg,#f4f7ff,#dbeafe 50%,#e6e1ff)"}}>
+        <h2 className="fw-bold mb-4">Bienvenue, {user.prenom} 👋</h2>
+        <div className="row mb-5">
+          <div className="col-md-4">
+            <div className="card border-0 shadow text-center p-4 mb-3" style={{borderRadius:18}}>
+              <div className="fw-bold text-primary" style={{fontSize:22}}>Tickets total</div>
+              <div className="display-5">{stats.total}</div>
             </div>
           </div>
-          <div className="col-12 col-md-4">
-            <div className="card text-center shadow border-0" style={{borderRadius:18}}>
-              <div className="card-body">
-                <div className="fw-bold fs-2 text-warning">{ticketsOuverts}</div>
-                <div className="text-muted">Tickets ouverts</div>
-              </div>
+          <div className="col-md-4">
+            <div className="card border-0 shadow text-center p-4 mb-3" style={{borderRadius:18}}>
+              <div className="fw-bold text-success" style={{fontSize:22}}>Ouverts</div>
+              <div className="display-5">{stats.ouverts}</div>
             </div>
           </div>
-          <div className="col-12 col-md-4">
-            <div className="card text-center shadow border-0" style={{borderRadius:18}}>
-              <div className="card-body">
-                <div className="fw-bold fs-2 text-danger">{ticketsUrgents}</div>
-                <div className="text-muted">Tickets urgents</div>
-              </div>
+          <div className="col-md-4">
+            <div className="card border-0 shadow text-center p-4 mb-3" style={{borderRadius:18}}>
+              <div className="fw-bold text-danger" style={{fontSize:22}}>Urgences</div>
+              <div className="display-5">{stats.urgents}</div>
             </div>
           </div>
         </div>
-        <div className="bg-white p-3 rounded-4 shadow-sm mb-2">
-          <h4 className="mb-3" style={{color:"#322d53"}}>Tous les tickets</h4>
-          <div className="table-responsive">
-            <table className="table table-hover align-middle">
-              <thead className="table-light">
-                <tr>
-                  <th>ID</th>
-                  <th>Société</th>
-                  <th>Problème</th>
-                  <th>Date</th>
-                  <th>Statut</th>
-                  <th>Urgence</th>
+        <h4 className="mb-3">Derniers tickets</h4>
+        {loading ? <div>Chargement...</div> : (
+        <div className="table-responsive">
+          <table className="table table-striped table-hover align-middle rounded shadow-sm">
+            <thead>
+              <tr>
+                <th>Ticket #</th>
+                <th>Problématique</th>
+                <th>Date</th>
+                <th>Statut</th>
+                <th>Urgence</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tickets.slice(0,5).map(t => (
+                <tr key={t.id_ticket}>
+                  <td>{t.id_ticket}</td>
+                  <td>{t.problematique}</td>
+                  <td>{t.date_ouverture}</td>
+                  <td>
+                    <span className={"badge "+(t.statut==="En cours"?"bg-warning text-dark":(t.statut==="Fermé"?"bg-success":"bg-secondary"))}>{t.statut}</span>
+                  </td>
+                  <td>
+                    {t.urgence === "Oui" && <span className="badge bg-danger">Urgent</span>}
+                  </td>
+                  <td>
+                    <a href={`/tickets/${t.id_ticket}`} className="btn btn-sm btn-outline-primary">Voir</a>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {tickets.map(t => (
-                  <tr key={t.id_ticket}>
-                    <td className="fw-bold">{t.id_ticket}</td>
-                    <td>{t.societe}</td>
-                    <td>{t.problematique}</td>
-                    <td>{t.date_ouverture}</td>
-                    <td>
-                      <span className={
-                        "badge rounded-pill px-3 py-2 " +
-                        (t.statut === "Clos" ? "bg-success" :
-                        t.statut === "En cours" ? "bg-warning text-dark" :
-                        "bg-secondary")
-                      }>
-                        {t.statut}
-                      </span>
-                    </td>
-                    <td>
-                      {t.urgence && t.urgence.toLowerCase() === "oui" ? (
-                        <span className="badge bg-danger rounded-pill px-3 py-2">Urgent</span>
-                      ) : <span className="badge bg-light text-dark rounded-pill px-3 py-2">Non</span>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {msg && <div className="alert alert-danger mt-2">{msg}</div>}
-          </div>
+              ))}
+            </tbody>
+          </table>
+        </div>)}
+        <div className="mt-4">
+          <a href="/tickets" className="btn btn-primary rounded-pill">Voir tous mes tickets</a>
+          <a href="/createticket" className="btn btn-outline-success ms-3 rounded-pill">Nouveau ticket</a>
         </div>
       </div>
     </div>
