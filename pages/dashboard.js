@@ -1,44 +1,134 @@
 import { useEffect, useState } from "react";
-import { apiCall } from "../utils/api";
-import TicketForm from "../components/TicketForm";
-import TicketList from "../components/TicketList";
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [tickets, setTickets] = useState([]);
-  const [showForm, setShowForm] = useState(false);
+  const [message, setMessage] = useState("");
+  const [sujet, setSujet] = useState("");
+  const [description, setDescription] = useState("");
+  const [chargement, setChargement] = useState(false);
 
+  // Récupère l'utilisateur connecté
   useEffect(() => {
-    const u = JSON.parse(localStorage.getItem("user"));
-    if (!u) window.location.href = "/login";
-    setUser(u);
-    loadTickets(u);
+    const u = localStorage.getItem("user");
+    if (!u) {
+      window.location.href = "/login";
+    } else {
+      setUser(JSON.parse(u));
+      fetchTickets(JSON.parse(u));
+    }
+    // eslint-disable-next-line
   }, []);
 
-  async function loadTickets(u) {
-    const res = await apiCall("getTickets", { email: u?.email, role: u?.role });
-    if (res.status === "success") setTickets(res.tickets || []);
+  // Récupère les tickets (pour ce client ou tous si admin)
+  async function fetchTickets(u) {
+    setChargement(true);
+    setMessage("");
+    try {
+      const res = await fetch("/api/tickets?role=" + u.role + "&email=" + u.email);
+      const data = await res.json();
+      setTickets(data.tickets || []);
+    } catch {
+      setMessage("Erreur lors du chargement des tickets");
+    }
+    setChargement(false);
   }
 
-  function logout() {
-    localStorage.removeItem("user");
-    window.location.href = "/login";
+  // Créer un ticket
+  async function handleCreateTicket(e) {
+    e.preventDefault();
+    setChargement(true);
+    setMessage("");
+    try {
+      const res = await fetch("/api/tickets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sujet,
+          description,
+          email: user.email,
+          societe: user.societe,
+          nom: user.nom,
+          prenom: user.prenom,
+        }),
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        setMessage("Ticket créé !");
+        setSujet("");
+        setDescription("");
+        fetchTickets(user);
+      } else {
+        setMessage(data.message || "Erreur lors de la création");
+      }
+    } catch {
+      setMessage("Erreur réseau ou serveur");
+    }
+    setChargement(false);
   }
+
+  if (!user) return <div>Chargement...</div>;
 
   return (
-    <div style={{maxWidth: "1100px", margin: "auto"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"20px"}}>
-        <img src="/logo.png" width={100} height={48} alt="Logo" className="logo" />
-        <div>
-          <span>Bienvenue, {user?.prenom} {user?.nom} ({user?.role})</span>
-          <button onClick={logout} style={{marginLeft:16}}>Déconnexion</button>
-        </div>
+    <div style={{ maxWidth: 700, margin: "40px auto", padding: 20 }}>
+      <h2>Dashboard {user.role === "Admin" ? "Admin" : "Client"}</h2>
+      <div>
+        <b>Bonjour {user.prenom} {user.nom}</b> ({user.email} — {user.societe})<br />
+        <button onClick={() => { localStorage.clear(); window.location.href = "/login"; }}>Déconnexion</button>
       </div>
-      <button onClick={()=>setShowForm(!showForm)}>
-        {showForm ? "Annuler" : "Créer un ticket"}
-      </button>
-      {showForm && <TicketForm user={user} onSuccess={()=>{ setShowForm(false); loadTickets(user); }} />}
-      <TicketList tickets={tickets} user={user} refresh={()=>loadTickets(user)} />
+      <h3 style={{ marginTop: 30 }}>Créer un ticket</h3>
+      <form onSubmit={handleCreateTicket}>
+        <input
+          placeholder="Sujet du ticket"
+          value={sujet}
+          onChange={e => setSujet(e.target.value)}
+          required
+          style={{ width: "100%", margin: "8px 0", padding: 8 }}
+        />
+        <textarea
+          placeholder="Décris ton problème"
+          value={description}
+          onChange={e => setDescription(e.target.value)}
+          required
+          style={{ width: "100%", margin: "8px 0", padding: 8 }}
+        />
+        <button
+          type="submit"
+          disabled={chargement}
+          style={{ width: "100%", padding: 10, background: "#3b82f6", color: "white", border: "none", borderRadius: 4, marginTop: 12 }}
+        >
+          {chargement ? "Création..." : "Créer le ticket"}
+        </button>
+      </form>
+      <h3 style={{ marginTop: 30 }}>Mes tickets</h3>
+      {message && <div style={{ marginTop: 8, color: message.startsWith("Ticket") ? "green" : "red" }}>{message}</div>}
+      {chargement ? <div>Chargement des tickets...</div> : (
+        <table style={{ width: "100%", marginTop: 20, borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ background: "#eee" }}>
+              <th>Numéro</th>
+              <th>Sujet</th>
+              <th>Description</th>
+              <th>Status</th>
+              <th>Créé par</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tickets.map((t, i) => (
+              <tr key={i}>
+                <td>{t.id}</td>
+                <td>{t.sujet}</td>
+                <td>{t.description}</td>
+                <td>{t.status}</td>
+                <td>{t.email}</td>
+              </tr>
+            ))}
+            {tickets.length === 0 && (
+              <tr><td colSpan={5} style={{ textAlign: "center" }}>Aucun ticket pour le moment.</td></tr>
+            )}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
