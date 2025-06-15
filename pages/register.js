@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { useRouter } from "next/router";
-
 const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/";
 
 export default function Register() {
@@ -10,11 +8,10 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
-  const router = useRouter();
 
   async function handleRegister(e) {
     e.preventDefault();
-    setMsg("Création du compte...");
+    setMsg("Inscription en cours...");
     try {
       const res = await fetch(API_URL, {
         method: "POST",
@@ -30,8 +27,7 @@ export default function Register() {
       });
       const data = await res.json();
       if (data.status === "success") {
-        setMsg("Compte créé ! Connectez-vous.");
-        setTimeout(() => router.push("/login"), 1200);
+        setMsg("Compte créé ! Vous pouvez vous connecter.");
       } else {
         setMsg("Erreur : " + data.message);
       }
@@ -41,21 +37,23 @@ export default function Register() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-tr from-violet-700 via-indigo-600 to-blue-400">
-      <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md animate-fade-in">
-        <img src="/logo.png" alt="Logo" className="mx-auto mb-6 w-20 h-20" />
-        <h2 className="text-2xl font-extrabold text-violet-800 mb-6 text-center font-logo">Créer votre compte</h2>
+    <div className="container min-vh-100 d-flex justify-content-center align-items-center bg-light">
+      <div className="card shadow p-4 w-100" style={{ maxWidth: 400 }}>
+        <div className="text-center mb-3">
+          <img src="/logo.png" alt="ClaimOneOff" className="mb-2" width="72" />
+          <h2 className="fw-bold">Créer un compte</h2>
+        </div>
         <form onSubmit={handleRegister}>
-          <input className="border p-3 mb-4 w-full rounded-xl text-lg" placeholder="Société" value={societe} onChange={e => setSociete(e.target.value)} required />
-          <input className="border p-3 mb-4 w-full rounded-xl text-lg" placeholder="Nom" value={nom} onChange={e => setNom(e.target.value)} required />
-          <input className="border p-3 mb-4 w-full rounded-xl text-lg" placeholder="Prénom" value={prenom} onChange={e => setPrenom(e.target.value)} required />
-          <input className="border p-3 mb-4 w-full rounded-xl text-lg" placeholder="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
-          <input className="border p-3 mb-4 w-full rounded-xl text-lg" type="password" placeholder="Mot de passe" value={password} onChange={e => setPassword(e.target.value)} required />
-          <button className="w-full bg-violet-700 text-white py-3 rounded-xl font-bold text-lg hover:bg-violet-900 transition-all mb-2">Créer mon compte</button>
+          <input className="form-control mb-3" placeholder="Société" value={societe} onChange={e => setSociete(e.target.value)} required />
+          <input className="form-control mb-3" placeholder="Nom" value={nom} onChange={e => setNom(e.target.value)} required />
+          <input className="form-control mb-3" placeholder="Prénom" value={prenom} onChange={e => setPrenom(e.target.value)} required />
+          <input className="form-control mb-3" placeholder="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+          <input className="form-control mb-3" type="password" placeholder="Mot de passe" value={password} onChange={e => setPassword(e.target.value)} required />
+          <button className="btn btn-success w-100 mb-2">Créer mon compte</button>
         </form>
-        <div className="mt-4 text-sm text-center text-gray-500">{msg}</div>
-        <div className="text-center mt-4">
-          <a href="/login" className="text-violet-700 hover:underline">Déjà inscrit ? Se connecter</a>
+        <div className="text-danger text-center">{msg}</div>
+        <div className="text-center mt-2">
+          <a href="/login" className="link-primary">Se connecter</a>
         </div>
       </div>
     </div>
