@@ -18,10 +18,8 @@ export default function Login() {
       });
       const data = await res.json();
       if (data.status === "success") {
-        setMessage("Connexion réussie !");
-        // Ici, tu peux stocker le user en localStorage ou rediriger, par exemple :
-        // localStorage.setItem("user", JSON.stringify(data.user));
-        // window.location.href = "/dashboard";
+        localStorage.setItem("user", JSON.stringify(data.user));
+        window.location.href = "/dashboard";
       } else {
         setMessage(data.message || "Email ou mot de passe incorrect.");
       }
