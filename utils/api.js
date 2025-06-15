@@ -1,8 +1,6 @@
-// /utils/api.js
-export const API_URL = "https://script.google.com/macros/s/AKfycbyqgEfqr7VcWjw75Q4O5KBew3L2gbHL3_I8vMsz_mo1wsHKxnDTCixAFN4RQTC_3_xS/exec";
+export const API_URL = "https://billowing-base-6a8c.oneoffsas.workers.dev/";
 
-// Fonction utilitaire pour appeler l’API
-export async function apiCall(action, data = {}) {
+export async function apiCall(action, data) {
   const res = await fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
