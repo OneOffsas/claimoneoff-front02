@@ -1,76 +1,53 @@
 import Link from "next/link";
-import { useRouter } from "next/router";
 
-const menus = [
-  { icon: "📊", label: "Dashboard", href: "/admin" },
-  { icon: "🗂️", label: "Tickets", href: "/admin/tickets" },
-  { icon: "👥", label: "Clients", href: "/admin/clients" },
-  { icon: "📈", label: "Statistiques", href: "/admin/stats" },
-  { icon: "⬇️", label: "Export", href: "/admin/export" },
-];
-export default function Sidebar() {
-  const { pathname } = useRouter();
+export default function Sidebar({ role, active }) {
+  // 'role' = "Admin" ou "Client"
   return (
-    <aside
-      style={{
-        minWidth: 220,
-        background: "linear-gradient(160deg,#6C47FF 0%,#212155 100%)",
-        minHeight: "100vh",
-        boxShadow: "2px 0 14px #dedcff33",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        padding: "32px 0",
-        transition: "width 0.2s",
-        position: "sticky",
-        top: 0,
-      }}
-    >
-      <img
-        src="/logo.png"
-        alt="Logo"
-        style={{
-          width: 56,
-          marginBottom: 32,
-          borderRadius: 14,
-          boxShadow: "0 2px 14px #4443",
-          animation: "pulseLogo 2s infinite alternate",
-        }}
-      />
-      <nav style={{ width: "100%" }}>
-        {menus.map((m, i) => (
-          <Link href={m.href} key={i} legacyBehavior>
-            <a
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 18,
-                padding: "15px 36px",
-                color: "#fff",
-                fontWeight: 600,
-                fontSize: 17,
-                textDecoration: "none",
-                background: pathname === m.href ? "rgba(255,255,255,0.15)" : "none",
-                borderRadius: "12px",
-                margin: "8px 0",
-                boxShadow: pathname === m.href ? "0 2px 10px #d9d7fd44" : "none",
-                transition: "all 0.18s",
-                cursor: "pointer",
-                letterSpacing: ".02em",
-              }}
-            >
-              <span style={{ fontSize: 23 }}>{m.icon}</span>
-              {m.label}
+    <div className="d-flex flex-column flex-shrink-0 p-3 text-white bg-dark h-100" style={{width: "240px", minHeight:"100vh", borderTopRightRadius:22}}>
+      <a href="/" className="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+        <span className="fs-4 fw-bold" style={{letterSpacing:2}}>ClaimOneOff</span>
+      </a>
+      <hr/>
+      <ul className="nav nav-pills flex-column mb-auto">
+        <li>
+          <Link href={role === "Admin" ? "/admin-dashboard" : "/dashboard"}>
+            <a className={"nav-link text-white" + (active === "dashboard" ? " active bg-gradient" : "")}>
+              <i className="bi bi-house-door-fill me-2"/>Tableau de bord
             </a>
           </Link>
-        ))}
-      </nav>
-      <style>{`
-        @keyframes pulseLogo {
-          from { transform: scale(1);}
-          to { transform: scale(1.09) rotate(-3deg);}
-        }
-      `}</style>
-    </aside>
+        </li>
+        <li>
+          <Link href={role === "Admin" ? "/tickets-admin" : "/tickets"}>
+            <a className={"nav-link text-white" + (active === "tickets" ? " active bg-gradient" : "")}>
+              <i className="bi bi-card-list me-2"/>Tickets {role==="Admin" && <span className="badge bg-danger">Admin</span>}
+            </a>
+          </Link>
+        </li>
+        <li>
+          <Link href="/createticket">
+            <a className={"nav-link text-white" + (active === "createticket" ? " active bg-gradient" : "")}>
+              <i className="bi bi-plus-circle me-2"/>Créer un ticket
+            </a>
+          </Link>
+        </li>
+        <li>
+          <Link href="/profile">
+            <a className={"nav-link text-white" + (active === "profile" ? " active bg-gradient" : "")}>
+              <i className="bi bi-person-circle me-2"/>Mon profil
+            </a>
+          </Link>
+        </li>
+        <li>
+          <Link href="/logout">
+            <a className="nav-link text-white">
+              <i className="bi bi-box-arrow-right me-2"/>Déconnexion
+            </a>
+          </Link>
+        </li>
+      </ul>
+      <hr/>
+      <div className="text-white-50 small mt-auto">© ClaimOneOff</div>
+    </div>
   );
 }
+
