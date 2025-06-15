@@ -1,34 +1,77 @@
 import { useState } from "react";
-import { apiCall } from "../utils/api";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e) {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    const res = await apiCall("login", { email, password });
-    if (res.status === "success") {
-      localStorage.setItem("user", JSON.stringify(res));
-      window.location.href = "/dashboard";
-    } else {
-      setError(res.message || "Erreur de connexion.");
+    setLoading(true);
+    setMessage("");
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        setMessage("Connexion réussie !");
+        // Ici, tu peux stocker le user en localStorage ou rediriger, par exemple :
+        // localStorage.setItem("user", JSON.stringify(data.user));
+        // window.location.href = "/dashboard";
+      } else {
+        setMessage(data.message || "Email ou mot de passe incorrect.");
+      }
+    } catch (err) {
+      setMessage("Erreur réseau ou serveur");
     }
-  }
+    setLoading(false);
+  };
 
   return (
-    <div className="card">
-      <img src="/logo.png" width={120} height={60} alt="Logo" className="logo" />
-      <h2>Connexion à ClaimOneOff</h2>
+    <div style={{ maxWidth: 400, margin: "40px auto", padding: 20, border: "1px solid #eee", borderRadius: 8 }}>
+      <h2>Connexion</h2>
       <form onSubmit={handleSubmit}>
-        <input type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} required />
-        <input type="password" placeholder="Mot de passe" value={password} onChange={e=>setPassword(e.target.value)} required />
-        <button type="submit">Se connecter</button>
+        <input
+          type="email"
+          placeholder="E-mail"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          required
+          style={{ width: "100%", margin: "8px 0", padding: 8 }}
+        />
+        <input
+          type="password"
+          placeholder="Mot de passe"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          required
+          style={{ width: "100%", margin: "8px 0", padding: 8 }}
+        />
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            width: "100%",
+            padding: 10,
+            background: "#3b82f6",
+            color: "white",
+            border: "none",
+            borderRadius: 4,
+            marginTop: 12
+          }}
+        >
+          {loading ? "Connexion..." : "Se connecter"}
+        </button>
       </form>
-      <p><a href="/register">Créer un compte</a></p>
-      {error && <div style={{color: "red"}}>{error}</div>}
+      {message && (
+        <div style={{ marginTop: 16, color: message.startsWith("Connexion") ? "green" : "red" }}>
+          {message}
+        </div>
+      )}
     </div>
   );
 }
