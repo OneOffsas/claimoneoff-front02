@@ -1,53 +1,40 @@
 import Link from "next/link";
+import { Home, Ticket, BarChart, Settings, LogOut } from "lucide-react";
 
-export default function Sidebar({ role, active }) {
-  // 'role' = "Admin" ou "Client"
+export default function Sidebar({ onLogout }) {
   return (
-    <div className="d-flex flex-column flex-shrink-0 p-3 text-white bg-dark h-100" style={{width: "240px", minHeight:"100vh", borderTopRightRadius:22}}>
-      <a href="/" className="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
-        <span className="fs-4 fw-bold" style={{letterSpacing:2}}>ClaimOneOff</span>
-      </a>
-      <hr/>
-      <ul className="nav nav-pills flex-column mb-auto">
-        <li>
-          <Link href={role === "Admin" ? "/admin-dashboard" : "/dashboard"}>
-            <a className={"nav-link text-white" + (active === "dashboard" ? " active bg-gradient" : "")}>
-              <i className="bi bi-house-door-fill me-2"/>Tableau de bord
-            </a>
-          </Link>
-        </li>
-        <li>
-          <Link href={role === "Admin" ? "/tickets-admin" : "/tickets"}>
-            <a className={"nav-link text-white" + (active === "tickets" ? " active bg-gradient" : "")}>
-              <i className="bi bi-card-list me-2"/>Tickets {role==="Admin" && <span className="badge bg-danger">Admin</span>}
-            </a>
-          </Link>
-        </li>
-        <li>
-          <Link href="/createticket">
-            <a className={"nav-link text-white" + (active === "createticket" ? " active bg-gradient" : "")}>
-              <i className="bi bi-plus-circle me-2"/>Créer un ticket
-            </a>
-          </Link>
-        </li>
-        <li>
-          <Link href="/profile">
-            <a className={"nav-link text-white" + (active === "profile" ? " active bg-gradient" : "")}>
-              <i className="bi bi-person-circle me-2"/>Mon profil
-            </a>
-          </Link>
-        </li>
-        <li>
-          <Link href="/logout">
-            <a className="nav-link text-white">
-              <i className="bi bi-box-arrow-right me-2"/>Déconnexion
-            </a>
-          </Link>
-        </li>
-      </ul>
-      <hr/>
-      <div className="text-white-50 small mt-auto">© ClaimOneOff</div>
-    </div>
+    <aside className="h-screen bg-gradient-to-b from-violet-800 to-blue-900 w-64 flex flex-col shadow-2xl">
+      <div className="p-6 text-white font-bold text-2xl">ClaimOneOff</div>
+      <nav className="flex-1">
+        <ul>
+          <li>
+            <Link href="/dashboard" className="flex items-center p-4 hover:bg-violet-700 transition text-white">
+              <Home className="mr-2" /> Tableau de bord
+            </Link>
+          </li>
+          <li>
+            <Link href="/tickets" className="flex items-center p-4 hover:bg-violet-700 transition text-white">
+              <Ticket className="mr-2" /> Tickets
+            </Link>
+          </li>
+          <li>
+            <Link href="/stats" className="flex items-center p-4 hover:bg-violet-700 transition text-white">
+              <BarChart className="mr-2" /> Statistiques
+            </Link>
+          </li>
+          <li>
+            <Link href="/settings" className="flex items-center p-4 hover:bg-violet-700 transition text-white">
+              <Settings className="mr-2" /> Paramètres
+            </Link>
+          </li>
+        </ul>
+      </nav>
+      <div className="p-4">
+        <button onClick={onLogout} className="flex items-center text-white hover:text-red-400">
+          <LogOut className="mr-2" /> Déconnexion
+        </button>
+      </div>
+    </aside>
   );
 }
 
