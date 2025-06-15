@@ -1,163 +1,195 @@
-import { useState, useEffect } from "react";
-import { FaChartPie, FaListAlt, FaSignOutAlt, FaUsers } from "react-icons/fa";
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from "recharts";
+import { useEffect, useState } from "react";
+import { apiCall } from "../utils/api";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
-const COLORS = ["#6C47FF", "#FF5A5F", "#1C75BC", "#22c55e"];
-
-const fakeStats = [
-  { name: "Nouveaux", value: 8 },
-  { name: "Urgents", value: 3 },
-  { name: "Ouverts", value: 4 },
-  { name: "Résolus", value: 2 },
+const menuItems = [
+  { label: "Tickets", icon: "📋", key: "tickets" },
+  { label: "Statistiques", icon: "📊", key: "stats" },
+  { label: "Export CSV", icon: "⬇️", key: "export" }
 ];
 
-const fakeTickets = [
-  {
-    id: "TCKT1",
-    urgence: "Oui",
-    commande: "1201",
-    probleme: "RETARD",
-    transporteur: "Colissimo",
-    description: "Client non livré",
-    statut: "Nouveau",
-    date: "2025-06-14 09:12",
-    societe: "LaBoîteA",
-    user: "Alexandre",
-  },
-  // Ajoute d'autres tickets ici…
-];
+export default function Admin() {
+  const [user, setUser] = useState(null);
+  const [view, setView] = useState("tickets");
+  const [tickets, setTickets] = useState([]);
+  const [stats, setStats] = useState({});
+  const [msg, setMsg] = useState("");
 
-export default function AdminDashboard() {
-  const [menu, setMenu] = useState("dashboard");
+  useEffect(() => {
+    // Récupérer l'utilisateur depuis le localStorage
+    const u = JSON.parse(localStorage.getItem("user"));
+    if (!u || u.role !== "Admin") window.location = "/login";
+    setUser(u);
 
-  // Ici tu fetches tes vraies stats/tickets via Apps Script !
+    // Charger tous les tickets
+    apiCall("getTickets", { email: u.email, role: u.role }).then((res) => {
+      if (res.status === "success") {
+        setTickets(res.tickets);
+        setStats({
+          total: res.tickets.length,
+          enCours: res.tickets.filter(t => t.statut === "En cours").length,
+          traite: res.tickets.filter(t => t.statut === "Traité").length,
+          rembourse: res.tickets.filter(t => t.statut === "Remboursé").length,
+          attente: res.tickets.filter(t => t.statut === "En attente").length,
+        });
+      } else {
+        setMsg("Erreur lors du chargement des tickets.");
+      }
+    });
+  }, []);
+
+  function exportCSV() {
+    if (!tickets.length) return;
+    const rows = [
+      Object.keys(tickets[0] || {}),
+      ...tickets.map(t => Object.values(t))
+    ];
+    const csv = rows.map(row => row.map(v => `"${(v || "").toString().replace(/"/g, '""')}"`).join(";")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "tickets.csv";
+    a.click();
+    window.URL.revokeObjectURL(url);
+  }
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-gradient-to-tr from-violet-700 to-blue-600">
       {/* Sidebar */}
-      <aside className="w-60 bg-white shadow-xl flex flex-col justify-between py-8 px-5">
+      <div className="w-64 bg-white shadow-2xl rounded-tr-3xl rounded-br-3xl flex flex-col p-6 justify-between min-h-full animate-fade-in">
         <div>
-          <div className="mb-10 flex items-center">
-            <img src="/logo.png" alt="logo" className="w-10 h-10 mr-2" />
-            <span className="text-xl font-bold text-violet-700 tracking-tight">ClaimOneOff</span>
+          <div className="flex flex-col items-center mb-10">
+            <img src="/logo.png" alt="Logo" className="w-16 h-16 mb-2" />
+            <div className="font-extrabold text-xl text-violet-800 mb-2">ClaimOneOff</div>
+            <div className="text-gray-500">Admin</div>
           </div>
-          <nav className="flex flex-col gap-2">
-            <SidebarBtn icon={<FaChartPie />} label="Dashboard" active={menu === "dashboard"} onClick={() => setMenu("dashboard")} />
-            <SidebarBtn icon={<FaListAlt />} label="Tickets" active={menu === "tickets"} onClick={() => setMenu("tickets")} />
-            <SidebarBtn icon={<FaUsers />} label="Clients" active={menu === "clients"} onClick={() => setMenu("clients")} />
-          </nav>
-        </div>
-        <button className="flex items-center gap-2 text-violet-700 font-semibold px-3 py-2 rounded-md bg-violet-50 hover:bg-violet-100 transition">
-          <FaSignOutAlt />
-          Déconnexion
-        </button>
-      </aside>
-      {/* Main */}
-      <main className="flex-1 p-10">
-        {menu === "dashboard" && <DashboardSection />}
-        {menu === "tickets" && <TicketsSection />}
-        {menu === "clients" && <ClientsSection />}
-      </main>
-    </div>
-  );
-}
-
-function SidebarBtn({ icon, label, active, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-3 px-3 py-2 rounded-md transition font-medium text-lg ${
-        active ? "bg-violet-100 text-violet-700" : "text-gray-700 hover:bg-gray-200"
-      }`}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-}
-
-// Dashboard principal avec graphique
-function DashboardSection() {
-  return (
-    <div>
-      <h2 className="text-2xl font-bold mb-8">Tableau de bord</h2>
-      <div className="flex gap-8 mb-10">
-        <ResponsiveContainer width="30%" height={160}>
-          <PieChart>
-            <Pie data={fakeStats} dataKey="value" nameKey="name" innerRadius={40} outerRadius={60}>
-              {fakeStats.map((entry, idx) => (
-                <Cell key={`cell-${idx}`} fill={COLORS[idx % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip />
-          </PieChart>
-        </ResponsiveContainer>
-        <div className="flex flex-col gap-3 justify-center">
-          {fakeStats.map((s, idx) => (
-            <div key={s.name} className="flex items-center gap-3">
-              <span className="w-3 h-3 rounded-full" style={{ background: COLORS[idx % COLORS.length] }}></span>
-              <span className="font-semibold text-gray-700">{s.name} :</span>
-              <span className="font-bold text-xl">{s.value}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-      {/* Ici tu ajoutes d’autres graphiques ou stats ! */}
-    </div>
-  );
-}
-
-// Tickets : tableau dynamique
-function TicketsSection() {
-  return (
-    <div>
-      <h2 className="text-2xl font-bold mb-8">Tous les tickets</h2>
-      <div className="overflow-x-auto bg-white shadow rounded-lg">
-        <table className="min-w-full">
-          <thead>
-            <tr className="bg-gray-50">
-              <th className="px-3 py-2">ID</th>
-              <th>Urgence</th>
-              <th>Commande</th>
-              <th>Problème</th>
-              <th>Transporteur</th>
-              <th>Description</th>
-              <th>Statut</th>
-              <th>Date</th>
-              <th>Client</th>
-              <th>Utilisateur</th>
-            </tr>
-          </thead>
-          <tbody>
-            {fakeTickets.map((t, idx) => (
-              <tr key={t.id} className={idx % 2 ? "bg-gray-50" : ""}>
-                <td className="px-3 py-2">{t.id}</td>
-                <td>{t.urgence === "Oui" ? <span className="px-2 py-1 rounded bg-red-100 text-red-700 font-semibold">Urgent</span> : ""}</td>
-                <td>{t.commande}</td>
-                <td>{t.probleme}</td>
-                <td>{t.transporteur}</td>
-                <td>{t.description}</td>
-                <td>
-                  <span className="px-2 py-1 rounded bg-violet-500 text-white font-bold">{t.statut}</span>
-                </td>
-                <td>{t.date}</td>
-                <td>{t.societe}</td>
-                <td>{t.user}</td>
-              </tr>
+          <ul className="space-y-2">
+            {menuItems.map((item) => (
+              <li key={item.key}>
+                <button
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl font-bold transition ${view === item.key ? "bg-gradient-to-r from-violet-700 to-blue-600 text-white" : "hover:bg-gray-100 text-gray-700"}`}
+                  onClick={() => setView(item.key)}
+                >
+                  <span className="text-2xl">{item.icon}</span> {item.label}
+                </button>
+              </li>
             ))}
-          </tbody>
-        </table>
+          </ul>
+        </div>
+        <div className="text-xs text-gray-400 mt-12">v1.0 – {user && user.nom}</div>
       </div>
-    </div>
-  );
-}
 
-// Clients : bientôt
-function ClientsSection() {
-  return (
-    <div>
-      <h2 className="text-2xl font-bold mb-6">Gestion des clients</h2>
-      <p>À venir : visualisation, gestion utilisateurs/clients, stats par client, etc.</p>
+      {/* Main Content */}
+      <div className="flex-1 p-10">
+        {/* Tickets */}
+        {view === "tickets" && (
+          <div>
+            <h1 className="text-2xl font-extrabold text-white mb-8">📋 Tous les tickets</h1>
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-white rounded-xl overflow-hidden shadow-xl">
+                <thead className="bg-blue-100">
+                  <tr>
+                    <th className="p-3">ID</th>
+                    <th>Société</th>
+                    <th>Utilisateur</th>
+                    <th>Email</th>
+                    <th>Statut</th>
+                    <th>Problème</th>
+                    <th>Urgence</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tickets.map((t, idx) => (
+                    <tr key={t.id_ticket} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                      <td className="p-2">{t.id_ticket}</td>
+                      <td>{t.societe}</td>
+                      <td>{t.utilisateur}</td>
+                      <td>{t.email}</td>
+                      <td>
+                        <span className={`px-2 py-1 rounded-lg text-xs font-bold ${
+                          t.statut === "En cours" ? "bg-yellow-100 text-yellow-800" :
+                          t.statut === "Traité" ? "bg-green-100 text-green-800" :
+                          t.statut === "Remboursé" ? "bg-blue-100 text-blue-800" :
+                          "bg-gray-200 text-gray-600"
+                        }`}>{t.statut}</span>
+                      </td>
+                      <td>{t.problematique}</td>
+                      <td>{t.urgence}</td>
+                      <td>{t.date_ouverture}</td>
+                      <td>
+                        {/* Tu peux ajouter un bouton ici pour afficher le détail ou gérer le statut */}
+                        <button className="text-blue-600 font-bold hover:underline">Détail</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {tickets.length === 0 && (
+                <div className="text-center text-gray-500 p-8">Aucun ticket pour le moment.</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Statistiques */}
+        {view === "stats" && (
+          <div>
+            <h1 className="text-2xl font-extrabold text-white mb-8">📊 Statistiques & KPIs</h1>
+            <div className="grid grid-cols-4 gap-4 mb-8">
+              <div className="bg-white p-6 rounded-xl shadow-xl flex flex-col items-center">
+                <span className="text-xl font-bold text-violet-700">{stats.total}</span>
+                <span className="text-gray-600">Total tickets</span>
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-xl flex flex-col items-center">
+                <span className="text-xl font-bold text-yellow-700">{stats.enCours}</span>
+                <span className="text-gray-600">En cours</span>
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-xl flex flex-col items-center">
+                <span className="text-xl font-bold text-green-700">{stats.traite}</span>
+                <span className="text-gray-600">Traités</span>
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-xl flex flex-col items-center">
+                <span className="text-xl font-bold text-blue-700">{stats.rembourse}</span>
+                <span className="text-gray-600">Remboursés</span>
+              </div>
+            </div>
+            {/* Graphique animé */}
+            <div className="bg-white p-6 rounded-xl shadow-xl">
+              <ResponsiveContainer width="100%" height={320}>
+                <BarChart data={[
+                  { name: "En cours", value: stats.enCours || 0 },
+                  { name: "Traités", value: stats.traite || 0 },
+                  { name: "Remboursés", value: stats.rembourse || 0 },
+                  { name: "En attente", value: stats.attente || 0 },
+                ]}>
+                  <XAxis dataKey="name" />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Bar dataKey="value" fill="#8b5cf6" radius={[12, 12, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {/* Export */}
+        {view === "export" && (
+          <div>
+            <h1 className="text-2xl font-extrabold text-white mb-8">⬇️ Export Tickets</h1>
+            <button
+              onClick={exportCSV}
+              className="px-8 py-4 bg-gradient-to-r from-blue-600 to-violet-700 text-white rounded-xl font-bold shadow-lg hover:scale-105 hover:bg-violet-800 transition"
+            >
+              Télécharger tous les tickets au format CSV
+            </button>
+            <div className="text-gray-400 mt-8">Cliquez pour exporter tous les tickets.</div>
+          </div>
+        )}
+        <div className="mt-10 text-center text-red-600">{msg}</div>
+      </div>
     </div>
   );
 }
