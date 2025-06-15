@@ -1,350 +1,246 @@
-import { useEffect, useState, useRef } from "react";
-import { apiCall } from "../utils/api";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 
-const menuItems = [
-  { label: "Mes tickets", icon: "📋", key: "tickets" },
-  { label: "Statistiques", icon: "📊", key: "stats" },
-  { label: "Créer un ticket", icon: "➕", key: "create" }
-];
+const API_URL = "https://script.google.com/macros/s/AKfycbz4oaV2F4-DeHC4-oYaR8wiTgha1ROTXN1WAMQT9H72SPI6b1NCtlClxZ8WwR0f6rZ9lg/exec";
 
-const TRANSPORTEURS = [
-  "Colissimo", "Chronopost", "Mondial Relay", "GLS", "DPD", "Autre"
-];
+// Simule une "auth" ultra basique locale (dans la vraie vie : utiliser des tokens)
+function getUser() {
+  if (typeof window === "undefined") return null;
+  try {
+    return JSON.parse(localStorage.getItem("user_claimoneoff"));
+  } catch {
+    return null;
+  }
+}
+function saveUser(user) {
+  localStorage.setItem("user_claimoneoff", JSON.stringify(user));
+}
 
-const PROBLEMES = [
-  "Perte de colis", "Colis endommagé", "Non reçu", "Erreur de préparation",
-  "Erreur de réception", "Produit endommagé", "Autre"
-];
+function formatDate(d) {
+  if (!d) return "";
+  if (d.includes("/")) return d;
+  const date = new Date(d);
+  return date.toLocaleDateString("fr-FR") + " " + date.toLocaleTimeString("fr-FR");
+}
 
 export default function Dashboard() {
-  const [user, setUser] = useState(null);
-  const [view, setView] = useState("tickets");
   const [tickets, setTickets] = useState([]);
-  const [stats, setStats] = useState({});
-  const [msg, setMsg] = useState("");
-  const [notif, setNotif] = useState("");
-  const [ticketForm, setTicketForm] = useState({
-    urgence: false, numero_commande: "", problematique: "",
-    transporteur: "", description: "", fichiers_joints: null
-  });
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const [discussionInput, setDiscussionInput] = useState("");
-  const fileInputRef = useRef();
+  const [commentaire, setCommentaire] = useState("");
+  const [msg, setMsg] = useState("");
+  const [stats, setStats] = useState({ total: 0, enCours: 0, clos: 0, urgent: 0 });
+  const router = useRouter();
 
+  // Contrôle accès : redirige si pas connecté
   useEffect(() => {
-    // Récupère l'utilisateur du localStorage
-    const u = JSON.parse(localStorage.getItem("user"));
-    if (!u) window.location = "/login";
-    setUser(u);
-
-    loadTickets(u);
-    // eslint-disable-next-line
+    const user = getUser();
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    if (user.role === "Admin") {
+      router.push("/admin");
+      return;
+    }
+    loadTickets(user);
   }, []);
 
-  async function loadTickets(u) {
+  function loadTickets(user = getUser()) {
     setMsg("Chargement...");
-    const res = await apiCall("getTickets", { email: u?.email, role: u?.role });
-    if (res.status === "success") {
-      setTickets(res.tickets || []);
-      setStats({
-        total: res.tickets.length,
-        enCours: res.tickets.filter(t => t.statut === "En cours").length,
-        traite: res.tickets.filter(t => t.statut === "Traité").length,
-        rembourse: res.tickets.filter(t => t.statut === "Remboursé").length,
+    fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "getTickets",
+        email: user.email,
+        role: user.role,
+      }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        setTickets(data.tickets || []);
+        setStats({
+          total: (data.tickets || []).length,
+          enCours: (data.tickets || []).filter(t => t.statut?.toLowerCase().includes("cours")).length,
+          clos: (data.tickets || []).filter(t => t.statut?.toLowerCase().includes("clos")).length,
+          urgent: (data.tickets || []).filter(t => (t.urgence || "").toLowerCase().includes("oui")).length,
+        });
+        setMsg("");
+      })
+      .catch(() => setMsg("Erreur de chargement"));
+  }
+
+  async function addDiscussion() {
+    if (!selectedTicket || !commentaire.trim()) return;
+    setMsg("Ajout du commentaire...");
+    try {
+      const user = getUser();
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "addDiscussion",
+          id_ticket: selectedTicket.id_ticket,
+          utilisateur: user.nom || user.email,
+          commentaire,
+        }),
       });
-      setMsg("");
-    } else {
-      setMsg("Erreur lors du chargement des tickets.");
+      const data = await res.json();
+      if (data.status === "success") {
+        setCommentaire("");
+        loadTickets();
+        setMsg("Commentaire ajouté");
+        setTimeout(() => setMsg(""), 1000);
+      }
+    } catch (e) {
+      setMsg("Erreur");
     }
   }
 
-  function handleTicketChange(e) {
-    const { name, value, type, checked, files } = e.target;
-    setTicketForm(f => ({
-      ...f,
-      [name]: type === "checkbox" ? checked : (type === "file" ? files[0] : value)
-    }));
-  }
-
-  async function handleTicketSubmit(e) {
-    e.preventDefault();
-    setMsg("Création du ticket...");
-    let fileUrl = "";
-    if (ticketForm.fichiers_joints) {
-      // Encode fichier en base64 (simple, pour Google Sheets)
-      fileUrl = await toBase64(ticketForm.fichiers_joints);
-    }
-    const data = {
-      societe: user.societe,
-      utilisateur: user.nom + " " + user.prenom,
-      email: user.email,
-      role: user.role,
-      urgence: ticketForm.urgence ? "Oui" : "Non",
-      numero_commande: ticketForm.urgence ? ticketForm.numero_commande : "",
-      sla_cible: ticketForm.urgence ? "Prioritaire" : "Standard",
-      problematique: ticketForm.problematique,
-      transporteur: ticketForm.transporteur,
-      description: ticketForm.description,
-      fichiers_joints: fileUrl,
-      priorite: ticketForm.urgence ? "Haute" : "Normale",
-      type_action: "",
-      delai_resolution: "",
-      facturation: ticketForm.urgence ? "5€" : "0€",
-    };
-    const res = await apiCall("createTicket", data);
-    if (res.status === "success") {
-      setMsg("✅ Ticket créé !");
-      setTicketForm({ urgence: false, numero_commande: "", problematique: "", transporteur: "", description: "", fichiers_joints: null });
-      fileInputRef.current.value = null;
-      loadTickets(user);
-      setView("tickets");
-      setNotif("Nouveau ticket créé !");
-      setTimeout(() => setNotif(""), 3500);
-    } else {
-      setMsg("Erreur : " + res.message);
-    }
-  }
-
-  async function openTicket(t) {
-    setSelectedTicket(null);
-    setView("tickets");
-    // Recharge le ticket depuis l’API pour avoir la discussion à jour
-    const res = await apiCall("getTickets", { email: user.email, role: user.role });
-    if (res.status === "success") {
-      const ticket = res.tickets.find(tt => tt.id_ticket === t.id_ticket);
-      setSelectedTicket(ticket);
-      setView("detail");
-    }
-  }
-
-  async function handleAddDiscussion(e) {
-    e.preventDefault();
-    setMsg("Ajout du message...");
-    const res = await apiCall("addDiscussion", {
-      id_ticket: selectedTicket.id_ticket,
-      utilisateur: user.nom + " " + user.prenom,
-      commentaire: discussionInput
-    });
-    if (res.status === "success") {
-      setDiscussionInput("");
-      openTicket(selectedTicket);
-      setNotif("Message envoyé !");
-      setTimeout(() => setNotif(""), 3500);
-    } else {
-      setMsg("Erreur discussion : " + res.message);
-    }
-  }
-
-  // Fichier → base64
-  function toBase64(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = error => reject(error);
-    });
-  }
-
-  // Menus et notifications
   return (
-    <div className="flex min-h-screen bg-gradient-to-tr from-violet-700 to-blue-600">
+    <div className="flex min-h-screen bg-gradient-to-tr from-violet-600 to-blue-500">
       {/* Sidebar */}
-      <div className="w-64 bg-white shadow-2xl rounded-tr-3xl rounded-br-3xl flex flex-col p-6 justify-between min-h-full animate-fade-in">
-        <div>
-          <div className="flex flex-col items-center mb-10">
-            <img src="/logo.png" alt="Logo" className="w-16 h-16 mb-2" />
-            <div className="font-extrabold text-xl text-violet-800 mb-2">ClaimOneOff</div>
-            <div className="text-gray-500">{user && user.nom}</div>
+      <aside className="w-64 bg-white shadow-xl rounded-tr-3xl rounded-br-3xl p-6 flex flex-col items-center sticky top-0 z-10 animate-slide-in-left">
+        <img src="/logo.png" alt="ClaimOneOff" className="mb-6 w-20" />
+        <h2 className="font-bold text-xl text-violet-700 mb-6">Espace Client</h2>
+        <nav className="flex flex-col gap-2 w-full">
+          <a className="py-2 px-4 rounded-xl hover:bg-violet-100 font-semibold transition" href="#tickets">Mes tickets</a>
+          <a className="py-2 px-4 rounded-xl hover:bg-violet-100 font-semibold transition" href="#stats">Mes stats</a>
+          <a className="py-2 px-4 rounded-xl hover:bg-violet-100 font-semibold transition" href="/" onClick={() => {localStorage.clear();}}>Déconnexion</a>
+        </nav>
+      </aside>
+      {/* Main */}
+      <main className="flex-1 p-8 bg-gray-50 rounded-tl-3xl min-h-screen">
+        <section id="stats" className="mb-8">
+          <h3 className="text-xl font-bold mb-4 text-violet-700">Mes KPIs</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="bg-white shadow-lg rounded-xl p-6 flex flex-col items-center">
+              <span className="text-lg text-gray-500">Tickets total</span>
+              <span className="text-3xl text-violet-700 font-bold">{stats.total}</span>
+            </div>
+            <div className="bg-white shadow-lg rounded-xl p-6 flex flex-col items-center">
+              <span className="text-lg text-gray-500">En cours</span>
+              <span className="text-3xl text-blue-700 font-bold">{stats.enCours}</span>
+            </div>
+            <div className="bg-white shadow-lg rounded-xl p-6 flex flex-col items-center">
+              <span className="text-lg text-gray-500">Clôturés</span>
+              <span className="text-3xl text-green-600 font-bold">{stats.clos}</span>
+            </div>
+            <div className="bg-white shadow-lg rounded-xl p-6 flex flex-col items-center">
+              <span className="text-lg text-gray-500">Urgents</span>
+              <span className="text-3xl text-red-600 font-bold">{stats.urgent}</span>
+            </div>
           </div>
-          <ul className="space-y-2">
-            {menuItems.map((item) => (
-              <li key={item.key}>
-                <button
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl font-bold transition ${view === item.key ? "bg-gradient-to-r from-violet-700 to-blue-600 text-white" : "hover:bg-gray-100 text-gray-700"}`}
-                  onClick={() => setView(item.key)}
-                >
-                  <span className="text-2xl">{item.icon}</span> {item.label}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="text-xs text-gray-400 mt-12">v1.0 – Utilisateur</div>
-      </div>
+        </section>
 
-      {/* Main Content */}
-      <div className="flex-1 p-10">
-        {notif && (
-          <div className="fixed top-10 right-10 bg-green-500 text-white px-8 py-3 rounded-2xl shadow-xl animate-fade-in text-lg z-50">
-            {notif}
+        <section id="tickets">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-violet-700">Mes tickets</h3>
+            <button
+              className="bg-violet-600 hover:bg-violet-800 text-white px-4 py-2 rounded-xl shadow transition"
+              onClick={loadTickets}
+            >
+              Rafraîchir
+            </button>
           </div>
-        )}
-
-        {/* Liste des tickets */}
-        {view === "tickets" && (
-          <div>
-            <h1 className="text-2xl font-extrabold text-white mb-8">📋 Mes tickets</h1>
-            <div className="overflow-x-auto">
-              <table className="min-w-full bg-white rounded-xl overflow-hidden shadow-xl">
-                <thead className="bg-blue-100">
+          {msg && <div className="mb-2 text-center text-red-500">{msg}</div>}
+          <div className="overflow-x-auto shadow rounded-xl bg-white">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="bg-gray-100 text-violet-700">
+                  <th className="p-3">ID</th>
+                  <th className="p-3">Date</th>
+                  <th className="p-3">Statut</th>
+                  <th className="p-3">Urgence</th>
+                  <th className="p-3">Transporteur</th>
+                  <th className="p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tickets.length === 0 ? (
                   <tr>
-                    <th className="p-3">ID</th>
-                    <th>Statut</th>
-                    <th>Problème</th>
-                    <th>Urgence</th>
-                    <th>Transporteur</th>
-                    <th>Date</th>
-                    <th>Description</th>
-                    <th>Actions</th>
+                    <td colSpan={6} className="text-center p-6">Aucun ticket</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {tickets.map((t, idx) => (
-                    <tr key={t.id_ticket} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                      <td className="p-2">{t.id_ticket}</td>
-                      <td>
-                        <span className={`px-2 py-1 rounded-lg text-xs font-bold ${
-                          t.statut === "En cours" ? "bg-yellow-100 text-yellow-800" :
-                          t.statut === "Traité" ? "bg-green-100 text-green-800" :
-                          t.statut === "Remboursé" ? "bg-blue-100 text-blue-800" :
-                          "bg-gray-200 text-gray-600"
-                        }`}>{t.statut}</span>
-                      </td>
-                      <td>{t.problematique}</td>
-                      <td>
-                        {t.urgence === "Oui" &&
-                          <span className="inline-block px-2 py-1 rounded bg-red-100 text-red-700 text-xs font-bold mr-2">Urgent</span>
-                        }
-                        {t.urgence === "Non" && <span className="text-xs text-gray-400">Normal</span>}
-                      </td>
-                      <td>{t.transporteur}</td>
-                      <td>{t.date_ouverture}</td>
-                      <td>{t.description}</td>
-                      <td>
-                        <button className="text-violet-800 underline font-bold" onClick={() => openTicket(t)}>Détail</button>
+                ) : (
+                  tickets.map(t => (
+                    <tr key={t.id_ticket} className="hover:bg-violet-50 transition cursor-pointer border-b" onClick={() => setSelectedTicket(t)}>
+                      <td className="p-3">{t.id_ticket}</td>
+                      <td className="p-3">{formatDate(t.date_ouverture)}</td>
+                      <td className="p-3">{t.statut}</td>
+                      <td className="p-3">{t.urgence}</td>
+                      <td className="p-3">{t.transporteur}</td>
+                      <td className="p-3">
+                        <button className="bg-blue-600 text-white px-3 py-1 rounded-xl text-xs hover:bg-blue-800 transition">Voir</button>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-              {tickets.length === 0 && (
-                <div className="text-center text-gray-500 p-8">Aucun ticket pour le moment.</div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Statistiques */}
-        {view === "stats" && (
-          <div>
-            <h1 className="text-2xl font-extrabold text-white mb-8">📊 Mes statistiques</h1>
-            <div className="grid grid-cols-3 gap-4 mb-8">
-              <div className="bg-white p-6 rounded-xl shadow-xl flex flex-col items-center">
-                <span className="text-xl font-bold text-violet-700">{stats.total}</span>
-                <span className="text-gray-600">Total tickets</span>
-              </div>
-              <div className="bg-white p-6 rounded-xl shadow-xl flex flex-col items-center">
-                <span className="text-xl font-bold text-yellow-700">{stats.enCours}</span>
-                <span className="text-gray-600">En cours</span>
-              </div>
-              <div className="bg-white p-6 rounded-xl shadow-xl flex flex-col items-center">
-                <span className="text-xl font-bold text-green-700">{stats.traite}</span>
-                <span className="text-gray-600">Traités</span>
-              </div>
-            </div>
-            <div className="bg-white p-6 rounded-xl shadow-xl">
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={[
-                  { name: "En cours", value: stats.enCours || 0 },
-                  { name: "Traités", value: stats.traite || 0 },
-                  { name: "Remboursés", value: stats.rembourse || 0 }
-                ]}>
-                  <XAxis dataKey="name" />
-                  <YAxis allowDecimals={false} />
-                  <Tooltip />
-                  <Bar dataKey="value" fill="#8b5cf6" radius={[12, 12, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
-
-        {/* Création d'un ticket */}
-        {view === "create" && (
-          <div>
-            <h1 className="text-2xl font-extrabold text-white mb-8">➕ Créer un nouveau ticket</h1>
-            <form onSubmit={handleTicketSubmit} className="bg-white p-8 rounded-xl shadow-2xl max-w-lg">
-              <div className="mb-4">
-                <label className="font-bold block mb-2">Problématique</label>
-                <select name="problematique" required value={ticketForm.problematique} onChange={handleTicketChange} className="border rounded p-2 w-full">
-                  <option value="">Sélectionnez...</option>
-                  {PROBLEMES.map(p => <option key={p}>{p}</option>)}
-                </select>
-              </div>
-              <div className="mb-4">
-                <label className="font-bold block mb-2">Transporteur</label>
-                <select name="transporteur" required value={ticketForm.transporteur} onChange={handleTicketChange} className="border rounded p-2 w-full">
-                  <option value="">Sélectionnez...</option>
-                  {TRANSPORTEURS.map(t => <option key={t}>{t}</option>)}
-                </select>
-              </div>
-              <div className="mb-4">
-                <label className="font-bold block mb-2">Description</label>
-                <textarea name="description" required className="border rounded p-2 w-full" rows={3} value={ticketForm.description} onChange={handleTicketChange} placeholder="Décrivez le problème…" />
-              </div>
-              <div className="mb-4 flex items-center">
-                <input type="checkbox" name="urgence" checked={ticketForm.urgence} onChange={handleTicketChange} id="urgence" className="mr-2" />
-                <label htmlFor="urgence" className="font-bold">Demande urgente</label>
-                {ticketForm.urgence && (
-                  <span className="ml-3 px-3 py-1 rounded bg-red-100 text-red-700 text-xs font-bold animate-pulse">
-                    +5 € (prise en charge prioritaire, numéro de commande requis)
-                  </span>
+                  ))
                 )}
-              </div>
-              {ticketForm.urgence && (
-                <div className="mb-4">
-                  <label className="font-bold block mb-2">Numéro de commande (obligatoire)</label>
-                  <input
-                    type="text"
-                    name="numero_commande"
-                    required
-                    value={ticketForm.numero_commande}
-                    onChange={handleTicketChange}
-                    className="border rounded p-2 w-full"
-                  />
-                </div>
-              )}
-              <div className="mb-4">
-                <label className="font-bold block mb-2">Fichier joint (PDF, image...)</label>
-                <input
-                  type="file"
-                  name="fichiers_joints"
-                  accept="image/*,application/pdf"
-                  ref={fileInputRef}
-                  onChange={handleTicketChange}
-                  className="block"
-                />
-              </div>
-              <button className="w-full bg-gradient-to-r from-violet-700 to-blue-600 text-white py-3 rounded-xl font-bold shadow-xl mt-4 hover:scale-105 transition">
-                Envoyer le ticket
-              </button>
-              {msg && <div className="text-center mt-3 text-violet-700">{msg}</div>}
-            </form>
+              </tbody>
+            </table>
           </div>
-        )}
+        </section>
+      </main>
 
-        {/* Détail ticket + discussion */}
-        {view === "detail" && selectedTicket && (
-          <div>
-            <button onClick={() => setView("tickets")} className="mb-4 text-white font-bold">&larr; Retour à la liste</button>
-            <div className="bg-white rounded-2xl shadow-xl p-8 max-w-3xl mx-auto">
-              <h2 className="text-2xl font-extrabold text-violet-800 mb-2">Ticket #{selectedTicket.id_ticket}</h2>
-              <div className="mb-4">
-                <span className="px-3 py-1 bg-violet-700 text-white rounded-xl mr-3 font-bold">{selectedTicket.statut}</span>
-                <span className="text-gray-700">{selectedTicket.problematique} – {selectedTicket.transporteur}</span>
-                {selectedTicket.urgence === "Oui" && <span className="ml-3 px-3 py-1 rounded bg-red-100 text-red-700 text-xs font-bold animate-pulse">Urgent</span>}
+      {/* Popup détail ticket */}
+      {selectedTicket && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 animate-fade-in">
+          <div className="bg-white rounded-2xl p-8 w-full max-w-2xl relative shadow-xl">
+            <button
+              className="absolute top-3 right-3 text-gray-600 hover:text-red-500 text-2xl font-bold"
+              onClick={() => setSelectedTicket(null)}
+              title="Fermer"
+            >
+              &times;
+            </button>
+            <h2 className="text-2xl font-bold mb-4 text-violet-700">Détail du ticket</h2>
+            <div className="mb-2"><b>ID :</b> {selectedTicket.id_ticket}</div>
+            <div className="mb-2"><b>Date d'ouverture :</b> {formatDate(selectedTicket.date_ouverture)}</div>
+            <div className="mb-2"><b>Statut :</b> {selectedTicket.statut}</div>
+            <div className="mb-2"><b>Priorité :</b> {selectedTicket.priorite}</div>
+            <div className="mb-2"><b>Urgence :</b> {selectedTicket.urgence}</div>
+            <div className="mb-2"><b>Numéro de commande :</b> {selectedTicket.numero_commande}</div>
+            <div className="mb-2"><b>Problématique :</b> {selectedTicket.problematique}</div>
+            <div className="mb-2"><b>Transporteur :</b> {selectedTicket.transporteur}</div>
+            <div className="mb-2"><b>Description :</b> {selectedTicket.description}</div>
+            {selectedTicket.fichiers_joints && (
+              <div className="mb-2">
+                <b>Fichier :</b>{" "}
+                <a
+                  href={selectedTicket.fichiers_joints}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline text-blue-700"
+                >
+                  Voir le fichier
+                </a>
               </div>
-              <div className="mb-2"><b>Description :</b> {selectedTicket.description}</div>
-              {selectedTicket.fichiers_joints && <div className="mb-2"><b>Fichier :</b> <a href={selectedTicket.fichiers_joints} target="_blank" rel="noopener noreferrer" className="underline text-blue-700">
-
+            )}
+            <div className="mb-2">
+              <b>Discussion :</b>
+              <pre className="bg-gray-100 rounded p-2 mt-1 text-xs max-h-40 overflow-auto">
+                {selectedTicket.discussion}
+              </pre>
+            </div>
+            {/* Ajouter un commentaire */}
+            <div className="mt-4">
+              <textarea
+                className="border p-2 rounded w-full mb-2"
+                rows={2}
+                value={commentaire}
+                onChange={e => setCommentaire(e.target.value)}
+                placeholder="Ajouter un commentaire (visible à tous les utilisateurs de ce ticket)"
+              />
+              <button
+                onClick={addDiscussion}
+                className="bg-violet-600 hover:bg-violet-800 text-white px-6 py-2 rounded-xl shadow transition"
+                disabled={!commentaire.trim()}
+              >
+                Ajouter le commentaire
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
