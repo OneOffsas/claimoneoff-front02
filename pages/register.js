@@ -1,4 +1,6 @@
 import { useState } from "react";
+import Link from "next/link";
+
 export default function Register() {
   const [societe, setSociete] = useState("");
   const [nom, setNom] = useState("");
@@ -20,7 +22,7 @@ export default function Register() {
       });
       const data = await res.json();
       if (data.status === "success") {
-        setMessage("Compte créé avec succès !");
+        setMessage("🎉 Compte créé avec succès ! Vous pouvez maintenant vous connecter.");
         setSociete(""); setNom(""); setPrenom(""); setEmail(""); setPassword("");
       } else {
         setMessage(data.message || "Erreur lors de la création du compte");
@@ -32,24 +34,74 @@ export default function Register() {
   };
 
   return (
-    <div className="centered">
-      <div className="card">
-        <img src="/logo.png" alt="Logo" style={{ width: 80, margin: "0 auto 16px", display: "block" }} />
-        <h2>Créer un compte</h2>
-        <form onSubmit={handleSubmit}>
-          <input placeholder="Société" value={societe} onChange={e => setSociete(e.target.value)} required />
-          <input placeholder="Nom" value={nom} onChange={e => setNom(e.target.value)} required />
-          <input placeholder="Prénom" value={prenom} onChange={e => setPrenom(e.target.value)} required />
-          <input type="email" placeholder="E-mail" value={email} onChange={e => setEmail(e.target.value)} required />
-          <input type="password" placeholder="Mot de passe" value={password} onChange={e => setPassword(e.target.value)} required />
-          <button type="submit" disabled={loading}>
-            {loading ? "Création en cours..." : "Créer mon compte"}
-          </button>
-        </form>
-        {message && (
-          <div style={{ marginTop: 16, color: message.startsWith("Compte") ? "green" : "red" }}>{message}</div>
-        )}
-      </div>
+    <div style={{
+      minHeight: "100vh",
+      background: "linear-gradient(120deg, #6C47FF 0%, #212155 100%)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+    }}>
+      <form onSubmit={handleSubmit} style={{
+        background: "#fff", borderRadius: 14, boxShadow: "0 2px 24px #4439", padding: 36, width: 400, maxWidth: "92vw"
+      }}>
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <img src="/logo.png" alt="Logo" style={{ width: 70, marginBottom: 22, borderRadius: 16 }} />
+        </div>
+        <h2 style={{ textAlign: "center", color: "#6C47FF", fontWeight: 700 }}>Créer un compte</h2>
+        <input
+          placeholder="Société"
+          value={societe}
+          onChange={e => setSociete(e.target.value)}
+          required
+          style={{ width: "100%", margin: "12px 0" }}
+        />
+        <div style={{ display: "flex", gap: 10 }}>
+          <input
+            placeholder="Nom"
+            value={nom}
+            onChange={e => setNom(e.target.value)}
+            required
+            style={{ flex: 1 }}
+          />
+          <input
+            placeholder="Prénom"
+            value={prenom}
+            onChange={e => setPrenom(e.target.value)}
+            required
+            style={{ flex: 1 }}
+          />
+        </div>
+        <input
+          type="email"
+          placeholder="E-mail"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          required
+          style={{ width: "100%", margin: "12px 0" }}
+        />
+        <input
+          type="password"
+          placeholder="Mot de passe"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          required
+          style={{ width: "100%", margin: "12px 0" }}
+        />
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            width: "100%", marginTop: 8,
+            background: "linear-gradient(120deg, #6C47FF 0%, #212155 100%)",
+            color: "#fff", border: "none", borderRadius: 8, padding: "12px 0", fontWeight: 700, fontSize: 18
+          }}>
+          {loading ? "Création en cours..." : "Créer mon compte"}
+        </button>
+        <div style={{ textAlign: "center", marginTop: 16 }}>
+          <Link href="/login" style={{ color: "#6C47FF" }}>Retour à la connexion</Link>
+        </div>
+        {message && <div style={{
+          marginTop: 18, color: message.startsWith("🎉") ? "green" : "red", textAlign: "center"
+        }}>{message}</div>}
+      </form>
     </div>
   );
 }
