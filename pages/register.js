@@ -1,20 +1,20 @@
 import { useState } from "react";
 
+const API_URL = "https://billowing-base-6a8c.oneoffsas.workers.dev/";
+
 export default function Register() {
   const [societe, setSociete] = useState("");
   const [nom, setNom] = useState("");
   const [prenom, setPrenom] = useState("");
   const [email, setEmail] = useState("");
-  const [motDePasse, setMotDePasse] = useState("");
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [password, setPassword] = useState("");
+  const [msg, setMsg] = useState("");
 
-  async function handleSubmit(e) {
+  async function handleRegister(e) {
     e.preventDefault();
-    setLoading(true);
-    setMessage("");
+    setMsg("Inscription en cours...");
     try {
-      const res = await fetch("https://script.google.com/macros/s/AKfycbzM3_gHbhIQsDvQXRFP8fPGzfeDoEbCCkY8lxSpWxaXSopU0u1X6jP2LPTjz8XkSShDKg/exec", {
+      const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -23,69 +23,37 @@ export default function Register() {
           nom,
           prenom,
           email,
-          motDePasse,
+          password,
         }),
       });
       const data = await res.json();
       if (data.status === "success") {
-        setMessage("Inscription réussie ! Connecte-toi.");
-        // Optionnel : window.location.href = "/login";
+        setMsg("Compte créé ! Vous pouvez vous connecter.");
       } else {
-        setMessage(data.message || "Erreur lors de l’inscription.");
+        setMsg("Erreur : " + data.message);
       }
-    } catch (err) {
-      setMessage("Erreur serveur ou réseau");
+    } catch (e) {
+      setMsg("Erreur réseau, merci de réessayer.");
     }
-    setLoading(false);
   }
 
   return (
-    <div style={{
-      maxWidth: 390,
-      margin: "80px auto",
-      padding: 34,
-      background: "#fff",
-      borderRadius: 18,
-      boxShadow: "0 2px 18px #e6e6ff88",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center"
-    }}>
-      <img src="/logo.png" style={{ width: 62, marginBottom: 18 }} alt="logo" />
-      <h2 style={{ color: "#6C47FF", marginBottom: 20 }}>Créer un compte</h2>
-      <form onSubmit={handleSubmit} style={{ width: "100%" }}>
-        <input type="text" placeholder="Société" value={societe} required onChange={e => setSociete(e.target.value)} style={inputStyle} />
-        <input type="text" placeholder="Nom" value={nom} required onChange={e => setNom(e.target.value)} style={inputStyle} />
-        <input type="text" placeholder="Prénom" value={prenom} required onChange={e => setPrenom(e.target.value)} style={inputStyle} />
-        <input type="email" placeholder="Email" value={email} required onChange={e => setEmail(e.target.value)} style={inputStyle} />
-        <input type="password" placeholder="Mot de passe" value={motDePasse} required onChange={e => setMotDePasse(e.target.value)} style={inputStyle} />
-        <button type="submit" disabled={loading}
-          style={{
-            width: "100%", padding: "10px 0", borderRadius: 8,
-            background: "#6C47FF", color: "#fff", fontWeight: 700, fontSize: 18,
-            border: "none", marginTop: 12, cursor: "pointer"
-          }}>
-          {loading ? "Création…" : "Créer mon compte"}
-        </button>
-      </form>
-      {message && (
-        <div style={{
-          marginTop: 14,
-          color: message.includes("réussie") ? "#22c55e" : "#ff0040",
-          fontWeight: 600,
-          fontSize: 15
-        }}>{message}</div>
-      )}
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-tr from-violet-600 to-blue-500">
+      <div className="bg-white rounded-2xl shadow-2xl p-10 w-full max-w-md animate-fade-in">
+        <div className="flex justify-center mb-4">
+          <img src="/logo.png" alt="ClaimOneOff" className="w-24 h-24" />
+        </div>
+        <h2 className="text-2xl font-bold text-center text-violet-800 mb-4">Créer un compte</h2>
+        <form onSubmit={handleRegister}>
+          <input className="border p-2 mb-4 w-full rounded" placeholder="Société" value={societe} onChange={e => setSociete(e.target.value)} required />
+          <input className="border p-2 mb-4 w-full rounded" placeholder="Nom" value={nom} onChange={e => setNom(e.target.value)} required />
+          <input className="border p-2 mb-4 w-full rounded" placeholder="Prénom" value={prenom} onChange={e => setPrenom(e.target.value)} required />
+          <input className="border p-2 mb-4 w-full rounded" placeholder="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+          <input className="border p-2 mb-4 w-full rounded" type="password" placeholder="Mot de passe" value={password} onChange={e => setPassword(e.target.value)} required />
+          <button className="w-full bg-violet-600 text-white py-2 rounded hover:bg-violet-800 transition font-semibold mb-2">Créer mon compte</button>
+        </form>
+        <div className="mt-3 text-sm text-center text-gray-500">{msg}</div>
+      </div>
     </div>
   );
 }
-
-const inputStyle = {
-  width: "100%",
-  padding: "10px",
-  borderRadius: 7,
-  border: "1px solid #e6e6f6",
-  marginBottom: 14,
-  fontSize: 16,
-  background: "#f9f9fd"
-};
