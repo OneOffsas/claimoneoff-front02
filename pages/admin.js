@@ -1,234 +1,232 @@
 import { useEffect, useState } from "react";
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from "recharts";
 
-// 🔗 URL de ton Apps Script (modifie ici si besoin)
 const API_URL = "https://script.google.com/macros/s/AKfycbz4oaV2F4-DeHC4-oYaR8wiTgha1ROTXN1WAMQT9H72SPI6b1NCtlClxZ8WwR0f6rZ9lg/exec";
 
-// Couleurs pour les stats
-const COLORS = ["#6366F1", "#0EA5E9", "#A21CAF", "#FBBF24", "#16A34A", "#EF4444"];
+function formatDate(d) {
+  if (!d) return "";
+  if (d.includes("/")) return d;
+  const date = new Date(d);
+  return date.toLocaleDateString("fr-FR") + " " + date.toLocaleTimeString("fr-FR");
+}
 
-export default function Admin() {
+export default function AdminDashboard() {
   const [tickets, setTickets] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const [statutFilter, setStatutFilter] = useState("Tous");
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [commentaire, setCommentaire] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [msg, setMsg] = useState("");
+  const [stats, setStats] = useState({ total: 0, enCours: 0, clos: 0, urgent: 0 });
 
-  // Stats
-  const [stats, setStats] = useState({
-    total: 0,
-    enCours: 0,
-    cloture: 0,
-    urgent: 0,
-    parTransporteur: {},
-    parProblematique: {},
-  });
-
-  // 🟢 Fetch tickets au load
+  // Récupère les tickets à l'ouverture
   useEffect(() => {
-    fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "getTickets", email: "", role: "Admin" }),
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        setTickets(data.tickets || []);
-        setLoading(false);
-        // Statistiques
-        const statsTmp = {
-          total: 0, enCours: 0, cloture: 0, urgent: 0, parTransporteur: {}, parProblematique: {},
-        };
-        data.tickets.forEach((t) => {
-          statsTmp.total++;
-          if ((t.statut || "").toLowerCase().includes("clos")) statsTmp.cloture++;
-          else statsTmp.enCours++;
-          if ((t.urgence || "").toLowerCase() === "oui") statsTmp.urgent++;
-          statsTmp.parTransporteur[t.transporteur] = (statsTmp.parTransporteur[t.transporteur] || 0) + 1;
-          statsTmp.parProblematique[t.problematique] = (statsTmp.parProblematique[t.problematique] || 0) + 1;
-        });
-        setStats(statsTmp);
-      });
+    loadTickets();
   }, []);
 
-  // Side menu animation
-  function toggleMenu() {
-    setMenuOpen(!menuOpen);
+  async function loadTickets() {
+    setLoading(true);
+    setMsg("Chargement...");
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "getTickets",
+          email: "", // admin = tous les tickets
+          role: "Admin",
+        }),
+      });
+      const data = await res.json();
+      setTickets(data.tickets || []);
+      // KPIs dynamiques :
+      setStats({
+        total: (data.tickets || []).length,
+        enCours: (data.tickets || []).filter(t => t.statut?.toLowerCase().includes("cours")).length,
+        clos: (data.tickets || []).filter(t => t.statut?.toLowerCase().includes("clos")).length,
+        urgent: (data.tickets || []).filter(t => (t.urgence || "").toLowerCase().includes("oui")).length,
+      });
+      setMsg("");
+    } catch (e) {
+      setMsg("Erreur de chargement");
+    }
+    setLoading(false);
   }
 
-  // Filtres avancés
-  const ticketsFiltres = tickets.filter(
-    t => statutFilter === "Tous" || (t.statut || "").toLowerCase().includes(statutFilter.toLowerCase())
-  );
-
-  // Liste des statuts distincts
-  const allStatuts = [...new Set(tickets.map(t => t.statut || "En cours"))];
-
-  // Graphes
-  const pieData = [
-    { name: "En cours", value: stats.enCours },
-    { name: "Clôturés", value: stats.cloture },
-    { name: "Urgents", value: stats.urgent }
-  ];
-
-  const barDataTransporteur = Object.keys(stats.parTransporteur).map(tr => ({
-    name: tr,
-    Tickets: stats.parTransporteur[tr],
-  }));
-
-  const barDataProblematique = Object.keys(stats.parProblematique).map(pb => ({
-    name: pb,
-    Tickets: stats.parProblematique[pb],
-  }));
-
-  // Formatage date
-  function formatDate(dateStr) {
-    if (!dateStr) return "-";
-    if (dateStr.includes("-")) return dateStr.replace("T", " ").split(".")[0];
-    return dateStr;
+  async function addDiscussion() {
+    if (!selectedTicket || !commentaire.trim()) return;
+    setMsg("Ajout du commentaire...");
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "addDiscussion",
+          id_ticket: selectedTicket.id_ticket,
+          utilisateur: "Admin",
+          commentaire,
+        }),
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        setCommentaire("");
+        loadTickets(); // refresh
+        setMsg("Commentaire ajouté");
+        setTimeout(() => setMsg(""), 1000);
+      }
+    } catch (e) {
+      setMsg("Erreur");
+    }
   }
 
   return (
-    <div className="flex h-screen bg-gradient-to-tr from-violet-700 to-blue-500 font-sans">
-      {/* Sidebar */}
-      <div className={`fixed top-0 left-0 h-full w-64 bg-white shadow-2xl z-20 transform transition-transform duration-300 ease-in-out ${menuOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}>
-        <div className="flex flex-col items-center py-10">
-          <img src="/logo.png" alt="ClaimOneOff" className="w-24 mb-3" />
-          <h2 className="text-xl font-bold text-violet-700 mb-6 tracking-tight">Admin ClaimOneOff</h2>
-          <button onClick={toggleMenu} className="md:hidden text-violet-700 mb-6">Fermer</button>
-          <nav className="flex flex-col gap-4 w-full px-4">
-            <button className="text-left py-2 px-4 rounded hover:bg-violet-100 text-violet-700 font-semibold">Tickets</button>
-            <button className="text-left py-2 px-4 rounded hover:bg-violet-100 text-violet-700 font-semibold">Statistiques</button>
-            <button className="text-left py-2 px-4 rounded hover:bg-violet-100 text-violet-700 font-semibold">Exports</button>
-          </nav>
-        </div>
-      </div>
-      {/* Overlay mobile */}
-      {menuOpen && <div className="fixed inset-0 bg-black opacity-30 z-10 md:hidden" onClick={toggleMenu} />}
-      {/* Main */}
-      <div className="flex-1 ml-0 md:ml-64 flex flex-col">
-        {/* Topbar */}
-        <div className="flex items-center justify-between bg-white py-4 px-8 shadow-md">
-          <button className="md:hidden text-violet-700" onClick={toggleMenu}>☰ Menu</button>
-          <div className="font-bold text-violet-700 text-lg">Gestion des tickets - Admin</div>
-          <div className="text-gray-400 text-sm">Bienvenue 👋</div>
-        </div>
-        {/* Contenu */}
-        <div className="flex-1 overflow-y-auto p-8 bg-gray-100">
-          {/* Stats Graphiques */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white rounded-2xl shadow p-4 flex flex-col items-center justify-center">
-              <h3 className="font-semibold text-violet-700 mb-2">Répartition Tickets</h3>
-              <ResponsiveContainer width="100%" height={160}>
-                <PieChart>
-                  <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60} label>
-                    {pieData.map((entry, index) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
-                  </Pie>
-                  <Legend />
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+    <div className="flex min-h-screen bg-gradient-to-tr from-violet-600 to-blue-500">
+      {/* Sidebar animée */}
+      <aside className="w-64 bg-white shadow-xl rounded-tr-3xl rounded-br-3xl p-6 flex flex-col items-center sticky top-0 z-10 animate-slide-in-left">
+        <img src="/logo.png" alt="ClaimOneOff" className="mb-6 w-20" />
+        <h2 className="font-bold text-xl text-violet-700 mb-6">Admin ClaimOneOff</h2>
+        <nav className="flex flex-col gap-2 w-full">
+          <a className="py-2 px-4 rounded-xl hover:bg-violet-100 font-semibold transition" href="#tickets">Tickets</a>
+          <a className="py-2 px-4 rounded-xl hover:bg-violet-100 font-semibold transition" href="#stats">Statistiques</a>
+          <a className="py-2 px-4 rounded-xl hover:bg-violet-100 font-semibold transition" href="/">Déconnexion</a>
+        </nav>
+      </aside>
+      {/* Main content */}
+      <main className="flex-1 p-8 bg-gray-50 rounded-tl-3xl min-h-screen">
+        <section id="stats" className="mb-8">
+          <h3 className="text-xl font-bold mb-4 text-violet-700">KPIs & Statistiques</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="bg-white shadow-lg rounded-xl p-6 flex flex-col items-center">
+              <span className="text-lg text-gray-500">Tickets total</span>
+              <span className="text-3xl text-violet-700 font-bold">{stats.total}</span>
             </div>
-            <div className="bg-white rounded-2xl shadow p-4">
-              <h3 className="font-semibold text-violet-700 mb-2">Par Transporteur</h3>
-              <ResponsiveContainer width="100%" height={160}>
-                <BarChart data={barDataTransporteur}>
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="Tickets" fill={COLORS[1]} />
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="bg-white shadow-lg rounded-xl p-6 flex flex-col items-center">
+              <span className="text-lg text-gray-500">En cours</span>
+              <span className="text-3xl text-blue-700 font-bold">{stats.enCours}</span>
             </div>
-            <div className="bg-white rounded-2xl shadow p-4">
-              <h3 className="font-semibold text-violet-700 mb-2">Par Problématique</h3>
-              <ResponsiveContainer width="100%" height={160}>
-                <BarChart data={barDataProblematique}>
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="Tickets" fill={COLORS[2]} />
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="bg-white shadow-lg rounded-xl p-6 flex flex-col items-center">
+              <span className="text-lg text-gray-500">Clôturés</span>
+              <span className="text-3xl text-green-600 font-bold">{stats.clos}</span>
+            </div>
+            <div className="bg-white shadow-lg rounded-xl p-6 flex flex-col items-center">
+              <span className="text-lg text-gray-500">Urgents</span>
+              <span className="text-3xl text-red-600 font-bold">{stats.urgent}</span>
             </div>
           </div>
-          {/* Filtres */}
-          <div className="flex flex-wrap items-center gap-4 mb-4">
-            <label className="font-semibold">Filtrer par statut:</label>
-            <select className="border rounded p-2" value={statutFilter} onChange={e => setStatutFilter(e.target.value)}>
-              <option value="Tous">Tous</option>
-              {allStatuts.map(st => <option key={st}>{st}</option>)}
-            </select>
-            <span className="ml-6 text-gray-500">Total : <b>{tickets.length}</b></span>
-            <span className="ml-2 text-violet-700 font-semibold">Urgents : {stats.urgent}</span>
+        </section>
+
+        <section id="tickets">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-violet-700">Tickets à traiter</h3>
+            <button
+              className="bg-violet-600 hover:bg-violet-800 text-white px-4 py-2 rounded-xl shadow transition"
+              onClick={loadTickets}
+            >
+              Rafraîchir
+            </button>
           </div>
-          {/* Tableau */}
-          <div className="overflow-x-auto shadow rounded-2xl">
-            <table className="min-w-full bg-white rounded-2xl">
+          {msg && <div className="mb-2 text-center text-red-500">{msg}</div>}
+          <div className="overflow-x-auto shadow rounded-xl bg-white">
+            <table className="min-w-full text-sm">
               <thead>
-                <tr className="bg-violet-700 text-white">
-                  <th className="p-2">ID</th>
-                  <th className="p-2">Société</th>
-                  <th className="p-2">Utilisateur</th>
-                  <th className="p-2">Email</th>
-                  <th className="p-2">Statut</th>
-                  <th className="p-2">Date</th>
-                  <th className="p-2">Urgence</th>
-                  <th className="p-2">Action</th>
+                <tr className="bg-gray-100 text-violet-700">
+                  <th className="p-3">ID</th>
+                  <th className="p-3">Date</th>
+                  <th className="p-3">Client</th>
+                  <th className="p-3">Statut</th>
+                  <th className="p-3">Urgence</th>
+                  <th className="p-3">Transporteur</th>
+                  <th className="p-3">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={8} className="text-center p-8">Chargement…</td></tr>
-                ) : ticketsFiltres.length === 0 ? (
-                  <tr><td colSpan={8} className="text-center p-8 text-gray-500">Aucun ticket</td></tr>
+                  <tr>
+                    <td colSpan={7} className="text-center p-6">Chargement...</td>
+                  </tr>
+                ) : tickets.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="text-center p-6">Aucun ticket</td>
+                  </tr>
                 ) : (
-                  ticketsFiltres.map(t => (
-                    <tr key={t.id_ticket} className="hover:bg-violet-50 transition cursor-pointer" onClick={() => setSelectedTicket(t)}>
-                      <td className="p-2">{t.id_ticket}</td>
-                      <td className="p-2">{t.societe}</td>
-                      <td className="p-2">{t.utilisateur}</td>
-                      <td className="p-2">{t.email}</td>
-                      <td className="p-2">{t.statut}</td>
-                      <td className="p-2">{formatDate(t.date_ouverture)}</td>
-                      <td className="p-2">{t.urgence === "Oui" ? <span className="text-red-500 font-bold">Oui</span> : "Non"}</td>
-                      <td className="p-2"><button className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-700 transition">Voir</button></td>
+                  tickets.map(t => (
+                    <tr key={t.id_ticket} className="hover:bg-violet-50 transition cursor-pointer border-b" onClick={() => setSelectedTicket(t)}>
+                      <td className="p-3">{t.id_ticket}</td>
+                      <td className="p-3">{formatDate(t.date_ouverture)}</td>
+                      <td className="p-3">{t.societe}</td>
+                      <td className="p-3">{t.statut}</td>
+                      <td className="p-3">{t.urgence}</td>
+                      <td className="p-3">{t.transporteur}</td>
+                      <td className="p-3">
+                        <button className="bg-blue-600 text-white px-3 py-1 rounded-xl text-xs hover:bg-blue-800 transition">Voir</button>
+                      </td>
                     </tr>
                   ))
                 )}
               </tbody>
             </table>
           </div>
-          {/* Affichage détail ticket */}
-          {selectedTicket && (
-            <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-              <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-xl relative animate-fade-in">
-                <button className="absolute top-4 right-4 text-2xl text-gray-400 hover:text-violet-600" onClick={() => setSelectedTicket(null)}>×</button>
-                <h3 className="text-2xl font-bold mb-4 text-violet-700">Détail du ticket</h3>
-                <div className="mb-2"><b>ID :</b> {selectedTicket.id_ticket}</div>
-                <div className="mb-2"><b>Statut :</b> {selectedTicket.statut}</div>
-                <div className="mb-2"><b>Société :</b> {selectedTicket.societe}</div>
-                <div className="mb-2"><b>Utilisateur :</b> {selectedTicket.utilisateur}</div>
-                <div className="mb-2"><b>Email :</b> {selectedTicket.email}</div>
-                <div className="mb-2"><b>Problématique :</b> {selectedTicket.problematique}</div>
-                <div className="mb-2"><b>Transporteur :</b> {selectedTicket.transporteur}</div>
-                <div className="mb-2"><b>Date :</b> {formatDate(selectedTicket.date_ouverture)}</div>
-                <div className="mb-2"><b>Description :</b> {selectedTicket.description}</div>
-                {selectedTicket.fichiers_joints && (
-                  <div className="mb-2"><b>Fichier :</b> <a href={selectedTicket.fichiers_joints} target="_blank" rel="noopener noreferrer" className="underline text-blue-700">Voir</a></div>
-                )}
-                {/* Discussion */}
-                <div className="mb-2"><b>Discussion :</b>
-                  <pre className="bg-gray-100 rounded p-2 mt-2 max-h-40 overflow-y-auto text-xs">{selectedTicket.discussion || "Aucune discussion"}</pre>
-                </div>
-                <div className="flex gap-3 mt-4">
-                  <button className="bg-gray-200 px-4 py-2 rounded hover:bg-gray-400" onClick={() => setSelectedTicket(null)}>Fermer</button>
-                </div>
+        </section>
+      </main>
+
+      {/* Popup détail ticket */}
+      {selectedTicket && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 animate-fade-in">
+          <div className="bg-white rounded-2xl p-8 w-full max-w-2xl relative shadow-xl">
+            <button
+              className="absolute top-3 right-3 text-gray-600 hover:text-red-500 text-2xl font-bold"
+              onClick={() => setSelectedTicket(null)}
+              title="Fermer"
+            >
+              &times;
+            </button>
+            <h2 className="text-2xl font-bold mb-4 text-violet-700">Détail du ticket</h2>
+            <div className="mb-2"><b>ID :</b> {selectedTicket.id_ticket}</div>
+            <div className="mb-2"><b>Date d'ouverture :</b> {formatDate(selectedTicket.date_ouverture)}</div>
+            <div className="mb-2"><b>Statut :</b> {selectedTicket.statut}</div>
+            <div className="mb-2"><b>Priorité :</b> {selectedTicket.priorite}</div>
+            <div className="mb-2"><b>Urgence :</b> {selectedTicket.urgence}</div>
+            <div className="mb-2"><b>Numéro de commande :</b> {selectedTicket.numero_commande}</div>
+            <div className="mb-2"><b>Problématique :</b> {selectedTicket.problematique}</div>
+            <div className="mb-2"><b>Transporteur :</b> {selectedTicket.transporteur}</div>
+            <div className="mb-2"><b>Description :</b> {selectedTicket.description}</div>
+            {selectedTicket.fichiers_joints && (
+              <div className="mb-2">
+                <b>Fichier :</b>{" "}
+                <a
+                  href={selectedTicket.fichiers_joints}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline text-blue-700"
+                >
+                  Voir le fichier
+                </a>
               </div>
+            )}
+            <div className="mb-2">
+              <b>Discussion :</b>
+              <pre className="bg-gray-100 rounded p-2 mt-1 text-xs max-h-40 overflow-auto">
+                {selectedTicket.discussion}
+              </pre>
             </div>
-          )}
+            {/* Ajouter un commentaire */}
+            <div className="mt-4">
+              <textarea
+                className="border p-2 rounded w-full mb-2"
+                rows={2}
+                value={commentaire}
+                onChange={e => setCommentaire(e.target.value)}
+                placeholder="Ajouter un commentaire (visible à tous les utilisateurs de ce ticket)"
+              />
+              <button
+                onClick={addDiscussion}
+                className="bg-violet-600 hover:bg-violet-800 text-white px-6 py-2 rounded-xl shadow transition"
+                disabled={!commentaire.trim()}
+              >
+                Ajouter le commentaire
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
