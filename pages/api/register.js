@@ -1,40 +1,30 @@
 const { google } = require('googleapis');
 
-// Générateur d'ID simple
-function makeId(length = 8) {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let id = '';
-  for (let i = 0; i < length; i++) id += chars.charAt(Math.floor(Math.random() * chars.length));
-  return id;
-}
-
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Méthode non autorisée" });
   }
 
-  // Ajout du body parser manuel pour Next.js API
-  if (!req.body || typeof req.body !== "object") {
-    let data = "";
-    await new Promise((resolve) => {
-      req.on("data", (chunk) => { data += chunk; });
-      req.on("end", resolve);
-    });
-    req.body = JSON.parse(data || "{}");
+  // Body parser Next.js : fonctionne partout
+  let body = req.body;
+  if (!body || typeof body !== "object") {
+    try {
+      body = JSON.parse(req?.body ?? "{}");
+    } catch (e) {
+      body = {};
+    }
   }
 
-  const { societe, nom, prenom, email, password } = req.body;
+  const { societe, nom, prenom, email, password } = body;
 
-  // Rôle toujours Client, Actif = Oui, etc.
+  // ---- AJUSTE ICI POUR TA FEUILLE ----
   const role = "Client";
   const actif = "Oui";
   const dateInscription = new Date().toLocaleString('fr-FR');
   const derniereConnexion = "";
+  const makeId = (length = 8) => Array.from({length}, () => "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"[Math.floor(Math.random()*62)]).join('');
+  const motDePasseHash = password;
 
-  // Optionnel : Ici tu pourrais hasher le mot de passe pour plus de sécurité
-  const motDePasseHash = password; // À remplacer par un vrai hash si besoin
-
-  // La clé JSON du service account dans la variable d'env Vercel
   const GOOGLE_SERVICE_ACCOUNT = process.env.GOOGLE_SERVICE_ACCOUNT;
   const credentials = JSON.parse(GOOGLE_SERVICE_ACCOUNT);
 
@@ -49,7 +39,7 @@ export default async function handler(req, res) {
   const sheetName = "Utilisateurs_ClaimOneOff";
 
   try {
-    // Vérifie si l'email existe déjà dans la colonne E (5ᵉ colonne = index 4)
+    // Vérifie si l'email existe déjà
     const readRes = await sheets.spreadsheets.values.get({
       spreadsheetId,
       range: `${sheetName}!E2:E`,
@@ -60,23 +50,23 @@ export default async function handler(req, res) {
       return res.status(400).json({ status: "error", message: "Email déjà utilisé." });
     }
 
-    // Ajoute la ligne complète en respectant l'ordre de tes colonnes
+    // Ajoute la ligne
     await sheets.spreadsheets.values.append({
       spreadsheetId,
       range: `${sheetName}!A:K`,
       valueInputOption: "USER_ENTERED",
       requestBody: {
         values: [[
-          makeId(),           // ID_User
-          societe,            // Societe
-          nom,                // Nom
-          prenom,             // Prenom
-          email,              // Email
-          motDePasseHash,     // MotDePasse_Hash
-          role,               // Role
-          actif,              // Actif
-          dateInscription,    // Date_Inscription
-          derniereConnexion   // Derniere_Connexion
+          makeId(),
+          societe,
+          nom,
+          prenom,
+          email,
+          motDePasseHash,
+          role,
+          actif,
+          dateInscription,
+          derniereConnexion
         ]]
       }
     });
@@ -87,3 +77,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ status: "error", message: error.message });
   }
 }
+
