@@ -42,4 +42,19 @@ export default function Register() {
           <div className="fw-light fs-6 text-secondary">Créer un compte</div>
         </div>
         <form onSubmit={handleRegister}>
-          <input className="form-control mb-3" placeholder="
+          <input className="form-control mb-3" placeholder="Société" value={societe} onChange={e => setSociete(e.target.value)} required />
+          <input className="form-control mb-3" placeholder="Nom" value={nom} onChange={e => setNom(e.target.value)} required />
+          <input className="form-control mb-3" placeholder="Prénom" value={prenom} onChange={e => setPrenom(e.target.value)} required />
+          <input className="form-control mb-3" placeholder="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+          <input className="form-control mb-3" type="password" placeholder="Mot de passe" value={password} onChange={e => setPassword(e.target.value)} required />
+          <button className="btn btn-success w-100 rounded-pill shadow-sm fw-bold">Créer mon compte</button>
+        </form>
+        <div className="text-danger text-center small mt-3">{msg}</div>
+        <div className="text-center mt-2">
+          <a href="/login" className="link-primary small">Déjà un compte ? Se connecter</a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
