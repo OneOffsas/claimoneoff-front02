@@ -2,22 +2,21 @@
   "name": "claimoneoff-front",
   "version": "1.0.0",
   "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
-  },
   "dependencies": {
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
     "recharts": "latest",
-    "bootstrap": "^5.3.3"
+    "lucide-react": "latest"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   },
   "devDependencies": {
-      "eslint-config-next": "^14.2.3",
-  "autoprefixer": "^10.4.21",
-  "postcss": "^8.5.5",
-  "tailwindcss": "^4.1.10"
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.5",
+    "tailwindcss": "^4.1.10"
   }
 }
