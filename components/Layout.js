@@ -56,5 +56,6 @@ export default function Layout({ children, user }) {
 }
 
 // Note : FaPlusIcon n'existe pas, remplacez par un icône de react-icons, par ex:
-import { FaPlus } from 'react-icons/fa';
+import { FaHome, FaTicketAlt, FaChartBar, FaSignOutAlt, FaPlus } from 'react-icons/fa';
 // et utilisez <FaPlus /> au lieu de <FaPlusIcon />.
+
