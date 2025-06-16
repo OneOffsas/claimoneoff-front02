@@ -1,89 +1,47 @@
 // components/Layout.js
-import React from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
-import {
-  FaTicketAlt,
-  FaChartBar,
-  FaSignOutAlt,
-  FaPlus
-} from 'react-icons/fa';
+import Link from "next/link"
+import { useRouter } from "next/router"
+import { FaTicketAlt, FaPlus, FaChartBar, FaSignOutAlt } from "react-icons/fa"
 
 export default function Layout({ children, user }) {
-  const router = useRouter();
+  const router = useRouter()
+  // si pas connecté, on n’affiche pas la sidebar
+  if (!user) return <>{children}</>
 
-  // Si pas d'utilisateur, on rend juste les enfants (ex: page login/register)
-  if (!user) return <>{children}</>;
-
-  // Définition simple du menu selon le rôle
-  const navItems = [
-    {
-      href: '/dashboard',
-      label: 'Mes tickets',
-      Icon: FaTicketAlt
-    },
-    {
-      href: '/createticket',
-      label: 'Nouveau ticket',
-      Icon: FaPlus
-    },
-    // si c'est un admin, on ajoute le dashboard admin
-    ...(user.role === 'Admin'
-      ? [
-          {
-            href: '/admin',
-            label: 'Dashboard Admin',
-            Icon: FaChartBar
-          }
-        ]
-      : []),
-    {
-      href: '/logout',
-      label: 'Se déconnecter',
-      Icon: FaSignOutAlt
-    }
-  ];
+  const nav = [
+    { href: "/dashboard", icon: <FaTicketAlt />, label: "Mes tickets" },
+    { href: "/createticket", icon: <FaPlus />, label: "Nouveau ticket" },
+  ]
+  if (user.role === "Admin") {
+    nav.push({ href: "/admin", icon: <FaChartBar />, label: "Admin Dashboard" })
+  }
 
   return (
-    <div className="d-flex vh-100">
-      {/* Sidebar */}
-      <aside
-        className="bg-light border-end"
-        style={{ width: 250, minHeight: '100vh' }}
-      >
-        <div className="text-center py-4">
-          <Link href="/" passHref>
-            <a>
-              <img
-                src="/logo.png"
-                alt="Logo"
-                className="img-fluid"
-                style={{ maxWidth: '120px' }}
-              />
-            </a>
-          </Link>
+    <div className="d-flex">
+      <aside className="bg-light vh-100 p-3" style={{width: 240}}>
+        <div className="text-center mb-4">
+          <img src="/logo.png" alt="Logo" style={{maxWidth:120}}/>
         </div>
-        <nav className="nav flex-column px-2">
-          {navItems.map(({ href, label, Icon }) => (
-            <Link href={href} key={href} passHref>
-              <a
-                className={`nav-link d-flex align-items-center ${
-                  router.pathname === href ? 'active fw-bold' : ''
-                }`}
-              >
-                <Icon className="me-2" />
-                {label}
+        <nav className="nav flex-column">
+          {nav.map(item => (
+            <Link key={item.href} href={item.href} passHref>
+              <a className={`nav-link ${router.pathname === item.href ? "active fw-bold" : ""}`}>
+                <span className="me-2">{item.icon}</span>
+                {item.label}
               </a>
             </Link>
           ))}
+          <Link href="/logout" passHref>
+            <a className="nav-link text-danger mt-4">
+              <FaSignOutAlt className="me-2"/> Se déconnecter
+            </a>
+          </Link>
         </nav>
       </aside>
-
-      {/* Contenu principal */}
-      <main className="flex-grow-1 p-4 overflow-auto">
+      <main className="flex-grow-1 p-4">
         {children}
       </main>
     </div>
-  );
+  )
 }
 
