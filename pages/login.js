@@ -1,54 +1,103 @@
-import { useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
+// pages/login.js
+import { useState, useEffect } from "react";
+import Layout from "@/components/Layout";
+import { Form, Button, Alert, Card } from "react-bootstrap";
+import { useRouter } from "next/router";
+import { saveUser, getUser } from "@/utils/auth";
 
-const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/";
+const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/"; // Remplace par ton endpoint
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [msg, setMsg] = useState("");
+  const [msg, setMsg] = useState({ text: "", variant: "" });
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  async function handleLogin(e) {
+  // Si déjà connecté, rediriger automatiquement
+  useEffect(() => {
+    const u = getUser();
+    if (u) {
+      // rediriger selon rôle
+      if (u.role && u.role.toLowerCase() === "admin") {
+        router.replace("/admin");
+      } else {
+        router.replace("/dashboard");
+      }
+    }
+  }, [router]);
+
+  async function handleSubmit(e) {
     e.preventDefault();
-    setMsg("Connexion en cours...");
+    setLoading(true);
+    setMsg({ text: "", variant: "" });
     try {
       const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "login", email, password }),
+        body: JSON.stringify({
+          action: "login",
+          email,
+          password
+        }),
       });
       const data = await res.json();
       if (data.status === "success") {
-        setMsg("Connexion réussie !");
-        // TODO : redirige selon rôle
-        if (data.role === "Admin") window.location.href = "/admin";
-        else window.location.href = "/tickets";
+        // data: { status: "success", id_user, societe, nom, prenom, email, role }
+        saveUser(data);
+        // redirection selon rôle
+        if (data.role && data.role.toLowerCase() === "admin") {
+          router.push("/admin");
+        } else {
+          router.push("/dashboard");
+        }
       } else {
-        setMsg("Erreur : " + data.message);
+        setMsg({ text: "Erreur : " + (data.message || "Email ou mot de passe incorrect"), variant: "danger" });
       }
-    } catch (e) {
-      setMsg("Erreur réseau, merci de réessayer.");
+    } catch (err) {
+      console.error("Login error:", err);
+      setMsg({ text: "Erreur réseau, réessayez.", variant: "danger" });
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-violet-700 to-blue-500">
-      <div className="bg-white rounded-3xl shadow-2xl p-10 w-full max-w-md flex flex-col items-center animate-fade-in">
-        <Image src="/logo.png" width={90} height={90} alt="Logo ClaimOneOff" />
-        <h2 className="text-2xl font-bold text-violet-800 mb-4 mt-2">Connexion</h2>
-        <form onSubmit={handleLogin} className="w-full">
-          <input className="border p-3 mb-4 w-full rounded" type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
-          <input className="border p-3 mb-4 w-full rounded" type="password" placeholder="Mot de passe" value={password} onChange={e => setPassword(e.target.value)} required />
-          <button className="w-full bg-violet-700 text-white py-2 rounded-xl font-semibold hover:bg-violet-800 transition mb-2">Se connecter</button>
-        </form>
-        <div className="mt-3 text-sm text-center text-gray-500">{msg}</div>
-        <div className="mt-4 flex flex-col items-center w-full">
-          <Link href="/forgot" className="text-blue-600 hover:underline text-xs mb-2">Mot de passe oublié ?</Link>
-          <Link href="/register" className="text-violet-700 font-semibold hover:underline text-xs">Créer un compte</Link>
-        </div>
+    <Layout>
+      <div className="d-flex justify-content-center">
+        <Card style={{ maxWidth: "400px", width: "100%" }} className="p-4">
+          <h2 className="mb-4 text-center">Se connecter</h2>
+          {msg.text && <Alert variant={msg.variant}>{msg.text}</Alert>}
+          <Form onSubmit={handleSubmit}>
+            <Form.Group className="mb-3" controlId="loginEmail">
+              <Form.Label>Email</Form.Label>
+              <Form.Control
+                type="email"
+                placeholder="Ton email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+              />
+            </Form.Group>
+            <Form.Group className="mb-3" controlId="loginPassword">
+              <Form.Label>Mot de passe</Form.Label>
+              <Form.Control
+                type="password"
+                placeholder="Mot de passe"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+              />
+            </Form.Group>
+            <Button variant="primary" type="submit" disabled={loading} className="w-100">
+              {loading ? "Connexion..." : "Se connecter"}
+            </Button>
+          </Form>
+          <div className="mt-3 text-center">
+            <a href="/forgot">Mot de passe oublié ?</a>
+          </div>
+        </Card>
       </div>
-    </div>
+    </Layout>
   );
 }
-
