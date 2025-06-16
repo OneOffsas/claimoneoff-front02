@@ -1,187 +1,233 @@
 // pages/admin.js
 import { useState, useEffect } from "react";
-import Sidebar from "../components/Sidebar";
-import { CircleCheck, LoaderCircle, Ticket } from "lucide-react";
-import Link from "next/link";
-import Image from "next/image";
+import Layout from "@/components/Layout";
+import { Table, Button, Modal, Badge, Spinner, Row, Col, Card } from "react-bootstrap";
+import { getUser } from "@/utils/auth";
+import { useRouter } from "next/router";
 
-const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/";
+const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/"; // remplace
 
 export default function Admin() {
+  const [user, setUser] = useState(null);
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const router = useRouter();
 
   useEffect(() => {
-    fetchTickets();
-  }, []);
+    const u = getUser();
+    if (!u) {
+      router.replace("/login");
+    } else if (u.role && u.role.toLowerCase() !== "admin") {
+      router.replace("/dashboard");
+    } else {
+      setUser(u);
+      fetchTickets();
+    }
+  }, [router]);
 
   async function fetchTickets() {
     setLoading(true);
     try {
-      // Exemple d'appel API, à remplacer par le tien
-      // const res = await fetch(API_URL, { ... });
-      // const data = await res.json();
-      // setTickets(data.tickets);
-      // Ici on simule :
-      setTickets([
-        {
-          id: "TCKT_12345",
-          utilisateur: "Sophie Dupont",
-          email: "sophie@entreprise.com",
-          date_ouverture: "2025-06-16 09:00",
-          statut: "En cours",
-          urgence: "Haute",
-          sujet: "Colis perdu",
-          description: "Le colis n&apos;est pas arrivé.",
-          transporteur: "Colissimo",
-        },
-        // ... autres tickets
-      ]);
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "getTickets", email: user.email, role: user.role }),
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        setTickets(data.tickets || []);
+      } else {
+        console.error("Erreur fetchTickets admin:", data);
+      }
     } catch (err) {
-      console.error("fetchTickets error:", err);
+      console.error("fetchTickets admin network error:", err);
     } finally {
       setLoading(false);
     }
   }
 
-  const kpiTotal = tickets.length;
-  const kpiEnCours = tickets.filter(t => t.statut === "En cours").length;
-  const kpiResolu = tickets.filter(t => t.statut === "Résolu").length;
+  // KPI
+  const total = tickets.length;
+  const enCours = tickets.filter(t => t.statut.toLowerCase() === "en cours").length;
+  const resolus = tickets.filter(t => t.statut.toLowerCase() === "résolu" || t.statut.toLowerCase() === "resolu").length;
+  const rembourse = tickets.filter(t => t.statut.toLowerCase() === "remboursé" || t.statut.toLowerCase() === "rembourse").length;
 
-  function handleLogout() {
-    // Par exemple, supprimer token, rediriger
-    window.location.href = "/login";
+  function getBadgeVariant(statut) {
+    if (statut.toLowerCase() === "résolu" || statut.toLowerCase() === "resolu") return "success";
+    if (statut.toLowerCase() === "en cours" || statut.toLowerCase() === "encours") return "primary";
+    if (statut.toLowerCase() === "remboursé" || statut.toLowerCase() === "rembourse") return "warning";
+    return "secondary";
+  }
+
+  // Permettre admin de changer le statut
+  async function handleChangeStatus(ticketId, newStatus) {
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "updateStatus", id_ticket: ticketId, statut: newStatus }),
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        fetchTickets();
+        if (selectedTicket && selectedTicket.id_ticket === ticketId) {
+          setSelectedTicket(prev => ({ ...prev, statut: newStatus, date_maj: new Date().toISOString() }));
+        }
+      } else {
+        console.error("Erreur updateStatus:", data);
+      }
+    } catch (err) {
+      console.error("updateStatus error:", err);
+    }
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      <Sidebar onLogout={handleLogout} />
-
-      <main className="flex-1 p-8">
-        <h1 className="text-3xl font-extrabold text-violet-800 mb-6">Admin - Gestion des Tickets</h1>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-2xl shadow-lg flex items-center p-6">
-            <Ticket className="text-violet-600 mr-4" size={32} />
-            <div>
-              <div className="text-2xl font-bold">{kpiTotal}</div>
-              <div className="text-gray-500">Tickets total</div>
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl shadow-lg flex items-center p-6">
-            <LoaderCircle className="text-blue-500 mr-4" size={32} />
-            <div>
-              <div className="text-2xl font-bold">{kpiEnCours}</div>
-              <div className="text-gray-500">En cours</div>
-            </div>
-          </div>
-          <div className="bg-white rounded-2xl shadow-lg flex items-center p-6">
-            <CircleCheck className="text-green-500 mr-4" size={32} />
-            <div>
-              <div className="text-2xl font-bold">{kpiResolu}</div>
-              <div className="text-gray-500">Résolus</div>
-            </div>
-          </div>
+    <Layout>
+      <h1 className="mb-4">Admin - Tous les Tickets</h1>
+      {loading ? (
+        <div className="text-center">
+          <Spinner animation="border" variant="primary" />
         </div>
+      ) : (
+        <>
+          {/* KPI Cards */}
+          <Row className="mb-4">
+            <Col md={3}>
+              <Card className="text-center">
+                <Card.Body>
+                  <Card.Title>Total</Card.Title>
+                  <Card.Text className="display-6">{total}</Card.Text>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={3}>
+              <Card className="text-center">
+                <Card.Body>
+                  <Card.Title>En cours</Card.Title>
+                  <Card.Text className="display-6">{enCours}</Card.Text>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={3}>
+              <Card className="text-center">
+                <Card.Body>
+                  <Card.Title>Résolus</Card.Title>
+                  <Card.Text className="display-6">{resolus}</Card.Text>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={3}>
+              <Card className="text-center">
+                <Card.Body>
+                  <Card.Title>Remboursé</Card.Title>
+                  <Card.Text className="display-6">{rembourse}</Card.Text>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
 
-        <div className="bg-white rounded-2xl shadow-xl p-6">
-          <div className="flex justify-between items-center mb-4">
-            <div className="text-xl font-bold text-violet-800 flex items-center">
-              <Ticket className="mr-2" /> Tous les tickets
-            </div>
-            <button
-              className="bg-violet-700 text-white px-4 py-2 rounded-xl hover:bg-violet-900 transition"
-              onClick={() => fetchTickets()}
-            >
-              Rafraîchir
-            </button>
-          </div>
-          {loading ? (
-            <div className="text-center py-8 text-gray-500">Chargement...</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="bg-gradient-to-r from-violet-600 to-blue-500 text-white">
-                    <th className="p-2">ID</th>
-                    <th className="p-2">Utilisateur</th>
-                    <th className="p-2">Email</th>
-                    <th className="p-2">Ouverture</th>
-                    <th className="p-2">Statut</th>
-                    <th className="p-2">Urgence</th>
-                    <th className="p-2">Sujet</th>
-                    <th className="p-2">Transporteur</th>
-                    <th className="p-2">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tickets.map((ticket) => (
-                    <tr key={ticket.id} className="hover:bg-gray-50 cursor-pointer">
-                      <td className="p-2 font-mono">{ticket.id}</td>
-                      <td className="p-2">{ticket.utilisateur}</td>
-                      <td className="p-2">{ticket.email}</td>
-                      <td className="p-2">{ticket.date_ouverture}</td>
-                      <td className="p-2">
-                        {ticket.statut === "Résolu" ? (
-                          <span className="text-green-600 font-bold">Résolu</span>
-                        ) : ticket.statut === "En cours" ? (
-                          <span className="text-blue-600 font-bold">En cours</span>
-                        ) : (
-                          <span className="text-orange-500 font-bold">{ticket.statut}</span>
-                        )}
-                      </td>
-                      <td className="p-2">{ticket.urgence}</td>
-                      <td className="p-2">{ticket.sujet}</td>
-                      <td className="p-2">{ticket.transporteur}</td>
-                      <td className="p-2">
-                        <button
-                          className="text-violet-700 font-bold hover:underline"
-                          onClick={() => setSelectedTicket(ticket)}
-                        >
-                          Voir
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+          {/* Tableau */}
+          <Table striped bordered hover responsive>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Utilisateur</th>
+                <th>Email</th>
+                <th>Date ouverture</th>
+                <th>Urgence</th>
+                <th>Sujet</th>
+                <th>Statut</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tickets.map(ticket => (
+                <tr key={ticket.id_ticket}>
+                  <td className="font-monospace">{ticket.id_ticket}</td>
+                  <td>{ticket.utilisateur}</td>
+                  <td>{ticket.email}</td>
+                  <td>{ticket.date_ouverture}</td>
+                  <td>{ticket.urgence}</td>
+                  <td>{ticket.problematique}</td>
+                  <td>
+                    <Badge bg={getBadgeVariant(ticket.statut)}>{ticket.statut}</Badge>
+                  </td>
+                  <td>
+                    <Button size="sm" onClick={() => setSelectedTicket(ticket)}>Voir</Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </>
+      )}
 
-        {selectedTicket && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-            <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-lg w-full relative animate-fade-in-up">
-              <button
-                onClick={() => setSelectedTicket(null)}
-                className="absolute top-3 right-4 text-gray-400 hover:text-red-400 text-2xl"
-                title="Fermer"
+      {/* Modal détails + action statut */}
+      {selectedTicket && (
+        <Modal show onHide={() => setSelectedTicket(null)} size="lg">
+          <Modal.Header closeButton>
+            <Modal.Title>Ticket {selectedTicket.id_ticket}</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <p><strong>Utilisateur :</strong> {selectedTicket.utilisateur}</p>
+            <p><strong>Email :</strong> {selectedTicket.email}</p>
+            <p><strong>Date ouverture :</strong> {selectedTicket.date_ouverture}</p>
+            <p><strong>Urgence :</strong> {selectedTicket.urgence}</p>
+            <p><strong>Numéro commande :</strong> {selectedTicket.numero_commande}</p>
+            <p><strong>SLA cible :</strong> {selectedTicket.sla_cible}</p>
+            <p><strong>Problématique :</strong> {selectedTicket.problematique}</p>
+            <p><strong>Transporteur :</strong> {selectedTicket.transporteur}</p>
+            <p><strong>Description :</strong> {selectedTicket.description}</p>
+            {selectedTicket.fichiers_joints && (
+              <p><strong>Fichier joint :</strong>{" "}
+                <a href={selectedTicket.fichiers_joints} target="_blank" rel="noopener noreferrer">
+                  Voir le fichier
+                </a>
+              </p>
+            )}
+            <p><strong>Statut :</strong> 
+              <Badge bg={getBadgeVariant(selectedTicket.statut)} className="ms-2">
+                {selectedTicket.statut}
+              </Badge>
+            </p>
+            <p><strong>Date MAJ :</strong> {selectedTicket.date_maj}</p>
+            <p><strong>Priorité :</strong> {selectedTicket.priorite}</p>
+            <p><strong>Type action :</strong> {selectedTicket.type_action}</p>
+            <p><strong>Délai résolution :</strong> {selectedTicket.delai_resolution}</p>
+            <p><strong>Facturation :</strong> {selectedTicket.facturation}</p>
+            {selectedTicket.discussion && (
+              <div className="mt-3">
+                <h5>Discussion</h5>
+                <pre style={{ whiteSpace: "pre-wrap", background: "#f8f9fa", padding: "10px" }}>
+                  {selectedTicket.discussion}
+                </pre>
+              </div>
+            )}
+            {/* Sélect pour changer statut */}
+            <Form.Group className="mt-3">
+              <Form.Label>Changer le statut :</Form.Label>
+              <Form.Select
+                defaultValue={selectedTicket.statut}
+                onChange={e => handleChangeStatus(selectedTicket.id_ticket, e.target.value)}
               >
-                ×
-              </button>
-              <h2 className="text-2xl font-bold mb-4 text-violet-700 flex items-center">
-                <Ticket className="mr-2" /> Ticket {selectedTicket.id}
-              </h2>
-              <div className="mb-2"><b>Utilisateur :</b> {selectedTicket.utilisateur}</div>
-              <div className="mb-2"><b>Email :</b> {selectedTicket.email}</div>
-              <div className="mb-2"><b>Date d’ouverture :</b> {selectedTicket.date_ouverture}</div>
-              <div className="mb-2"><b>Sujet :</b> {selectedTicket.sujet}</div>
-              <div className="mb-2"><b>Description :</b> {selectedTicket.description}</div>
-              <div className="mb-2"><b>Statut :</b> {selectedTicket.statut}</div>
-              <div className="mb-2"><b>Urgence :</b> {selectedTicket.urgence}</div>
-              <div className="mb-2"><b>Transporteur :</b> {selectedTicket.transporteur}</div>
-              <button
-                className="mt-6 w-full py-3 bg-blue-600 rounded-xl text-white font-bold hover:bg-violet-800 transition"
-                onClick={() => setSelectedTicket(null)}
-              >
-                Fermer
-              </button>
-            </div>
-          </div>
-        )}
-      </main>
-    </div>
+                <option value="En cours">En cours</option>
+                <option value="Résolu">Résolu</option>
+                <option value="Remboursé">Remboursé</option>
+                <option value="En attente">En attente</option>
+                <option value="Réclamation">Réclamation</option>
+                {/* Ajoute d’autres statuts si besoin */}
+              </Form.Select>
+            </Form.Group>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setSelectedTicket(null)}>
+              Fermer
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      )}
+    </Layout>
   );
 }
 
