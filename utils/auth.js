@@ -12,7 +12,7 @@ export function getUser() {
     if (u) {
       try {
         return JSON.parse(u);
-      } catch(e) {
+      } catch (e) {
         return null;
       }
     }
