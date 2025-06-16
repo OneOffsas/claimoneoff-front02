@@ -1,11 +1,11 @@
 // pages/createticket.js
 import { useState, useEffect } from "react";
-import Layout from "@/components/Layout";
+import Layout from "../components/Layout";
 import { Form, Button, Alert, Card, Spinner, Modal } from "react-bootstrap";
-import { getUser } from "@/utils/auth";
+import { getUser } from "../utils/auth";
 import { useRouter } from "next/router";
 
-const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/"; // remplace
+const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/"; // ton endpoint
 
 export default function CreateTicket() {
   const [user, setUser] = useState(null);
@@ -36,7 +36,6 @@ export default function CreateTicket() {
       router.replace("/login");
     } else {
       setUser(u);
-      // Pré-remplir certains champs
       setForm(prev => ({
         ...prev,
         societe: u.societe || "",
@@ -52,7 +51,6 @@ export default function CreateTicket() {
     setForm(prev => ({ ...prev, [name]: value }));
   }
 
-  // Afficher modal surcoût si urgence = "Haute"
   const [showModal, setShowModal] = useState(false);
   useEffect(() => {
     if (form.urgence === "Haute") {
@@ -73,7 +71,6 @@ export default function CreateTicket() {
       const data = await res.json();
       if (data.status === "success") {
         setMsg({ text: "Ticket créé avec succès !", variant: "success" });
-        // Option: rediriger vers dashboard
         setTimeout(() => router.push("/dashboard"), 1500);
       } else {
         setMsg({ text: "Erreur : " + (data.message || "Inconnue"), variant: "danger" });
@@ -93,7 +90,7 @@ export default function CreateTicket() {
           <h2 className="mb-4 text-center">Créer un Ticket</h2>
           {msg.text && <Alert variant={msg.variant}>{msg.text}</Alert>}
           <Form onSubmit={handleSubmit}>
-            {/* Société, Utilisateur (readonly) */}
+            {/* Société et Utilisateur en lecture seule */}
             <Form.Group className="mb-3">
               <Form.Label>Société</Form.Label>
               <Form.Control type="text" name="societe" value={form.societe} readOnly />
@@ -102,7 +99,6 @@ export default function CreateTicket() {
               <Form.Label>Utilisateur</Form.Label>
               <Form.Control type="text" name="utilisateur" value={form.utilisateur} readOnly />
             </Form.Group>
-            {/* Email, Role hidden */}
             <Form.Control type="hidden" name="email" value={form.email} />
             <Form.Control type="hidden" name="role" value={form.role} />
 
@@ -115,19 +111,21 @@ export default function CreateTicket() {
                 <option value="Haute">Haute</option>
               </Form.Select>
             </Form.Group>
+
             {showModal && (
               <Modal show onHide={() => setShowModal(false)}>
                 <Modal.Header closeButton>
                   <Modal.Title>Urgence Haute</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                  ⚠️ Vous avez choisi une urgence « Haute ». Ce service sera traité en priorité, surcoût indicatif de 5 €. 
+                  ⚠️ Vous avez choisi une urgence « Haute ». Ce service sera traité en priorité, surcoût indicatif de 5 €.
                 </Modal.Body>
                 <Modal.Footer>
                   <Button variant="secondary" onClick={() => setShowModal(false)}>Fermer</Button>
                 </Modal.Footer>
               </Modal>
             )}
+
             <Form.Group className="mb-3">
               <Form.Label>Numéro de commande</Form.Label>
               <Form.Control
@@ -223,11 +221,13 @@ export default function CreateTicket() {
                 placeholder="Par ex. 5 € si urgence"
               />
             </Form.Group>
+
             <Button variant="primary" type="submit" disabled={loading} className="w-100">
               {loading ? <Spinner animation="border" size="sm" /> : "Créer le ticket"}
             </Button>
-          </Card>
-        </div>
-      </Layout>
-    );
+          </Form>
+        </Card>
+      </div>
+    </Layout>
+  );
 }
