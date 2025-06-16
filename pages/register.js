@@ -1,7 +1,11 @@
-import Link from "next/link";
+// pages/register.js
 import { useState } from "react";
+import Layout from "@/components/Layout";
+import { Form, Button, Alert, Card } from "react-bootstrap";
+import { useRouter } from "next/router";
+import { saveUser } from "@/utils/auth";
 
-const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/";
+const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/"; // Remplace par ton endpoint
 
 export default function Register() {
   const [societe, setSociete] = useState("");
@@ -9,11 +13,14 @@ export default function Register() {
   const [prenom, setPrenom] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [msg, setMsg] = useState("");
+  const [msg, setMsg] = useState({ text: "", variant: "" });
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  async function handleRegister(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    setMsg("Inscription en cours...");
+    setLoading(true);
+    setMsg({ text: "", variant: "" });
     try {
       const res = await fetch(API_URL, {
         method: "POST",
@@ -29,36 +36,87 @@ export default function Register() {
       });
       const data = await res.json();
       if (data.status === "success") {
-        setMsg("Compte créé ! Vous pouvez vous connecter.");
+        setMsg({ text: "Compte créé ! Vous pouvez vous connecter.", variant: "success" });
+        // Option: auto-login et redirect vers dashboard ? On peut simplement rediriger après quelques secondes
+        setTimeout(() => {
+          router.push("/login");
+        }, 1500);
       } else {
-        setMsg("Erreur : " + data.message);
+        setMsg({ text: "Erreur : " + (data.message || "Inconnue"), variant: "danger" });
       }
-    } catch (e) {
-      setMsg("Erreur réseau, merci de réessayer.");
+    } catch (err) {
+      console.error("Register error:", err);
+      setMsg({ text: "Erreur réseau, réessayez.", variant: "danger" });
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-violet-600 to-blue-500">
-      <div className="bg-white rounded-2xl shadow-2xl p-10 w-full max-w-md">
-        <div className="flex justify-center mb-4">
-          <img src="/logo.png" alt="ClaimOneOff" className="w-20 h-20" />
-        </div>
-        <h2 className="text-2xl font-bold text-center text-violet-800 mb-2">Créer un compte</h2>
-        <form onSubmit={handleRegister}>
-          <input className="border p-2 mb-4 w-full rounded" placeholder="Société" value={societe} onChange={e => setSociete(e.target.value)} required />
-          <input className="border p-2 mb-4 w-full rounded" placeholder="Nom" value={nom} onChange={e => setNom(e.target.value)} required />
-          <input className="border p-2 mb-4 w-full rounded" placeholder="Prénom" value={prenom} onChange={e => setPrenom(e.target.value)} required />
-          <input className="border p-2 mb-4 w-full rounded" placeholder="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
-          <input className="border p-2 mb-4 w-full rounded" type="password" placeholder="Mot de passe" value={password} onChange={e => setPassword(e.target.value)} required />
-          <button className="w-full bg-violet-600 text-white py-2 rounded hover:bg-violet-800 transition font-semibold mb-2">Créer mon compte</button>
-        </form>
-        <div className="mt-3 text-sm text-center text-gray-500">{msg}</div>
-        <div className="mt-4 text-center">
-          <Link href="/login" className="text-violet-600 hover:underline">Déjà inscrit ? Se connecter</Link>
-        </div>
+    <Layout>
+      <div className="d-flex justify-content-center">
+        <Card style={{ maxWidth: "500px", width: "100%" }} className="p-4">
+          <h2 className="mb-4 text-center">Créer un compte</h2>
+          {msg.text && <Alert variant={msg.variant}>{msg.text}</Alert>}
+          <Form onSubmit={handleSubmit}>
+            <Form.Group className="mb-3" controlId="formSociete">
+              <Form.Label>Société</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Nom de la société"
+                value={societe}
+                onChange={e => setSociete(e.target.value)}
+                required
+              />
+            </Form.Group>
+            <Form.Group className="mb-3" controlId="formNom">
+              <Form.Label>Nom</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Ton nom"
+                value={nom}
+                onChange={e => setNom(e.target.value)}
+                required
+              />
+            </Form.Group>
+            <Form.Group className="mb-3" controlId="formPrenom">
+              <Form.Label>Prénom</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Ton prénom"
+                value={prenom}
+                onChange={e => setPrenom(e.target.value)}
+                required
+              />
+            </Form.Group>
+            <Form.Group className="mb-3" controlId="formEmail">
+              <Form.Label>Email</Form.Label>
+              <Form.Control
+                type="email"
+                placeholder="Ton email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+              />
+            </Form.Group>
+            <Form.Group className="mb-3" controlId="formPassword">
+              <Form.Label>Mot de passe</Form.Label>
+              <Form.Control
+                type="password"
+                placeholder="Mot de passe"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+              />
+            </Form.Group>
+            <Button variant="primary" type="submit" disabled={loading} className="w-100">
+              {loading ? "Création en cours..." : "Créer mon compte"}
+            </Button>
+          </Form>
+        </Card>
       </div>
-    </div>
+    </Layout>
   );
 }
+
 
