@@ -1,100 +1,86 @@
 // pages/login.js
-import { useState, useEffect } from "react";
-import Layout from "../components/Layout";
-import { Form, Button, Alert, Card } from "react-bootstrap";
-import { useRouter } from "next/router";
-import { saveUser, getUser } from "../utils/auth";
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
 
-const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/"; // ton endpoint
+const API_URL = process.env.NEXT_PUBLIC_API_URL || ''; 
+// Vous mettez ici l’URL de votre backend (Cloudflare Worker ou App Script) via variable d’environnement NEXT_PUBLIC_API_URL
 
 export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [msg, setMsg] = useState({ text: "", variant: "" });
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [msg, setMsg] = useState('');
 
-  useEffect(() => {
-    const u = getUser();
-    if (u) {
-      if (u.role && u.role.toLowerCase() === "admin") {
-        router.replace("/admin");
-      } else {
-        router.replace("/dashboard");
-      }
-    }
-  }, [router]);
-
-  async function handleSubmit(e) {
+  async function handleLogin(e) {
     e.preventDefault();
-    setLoading(true);
-    setMsg({ text: "", variant: "" });
+    setMsg('Connexion en cours...');
     try {
       const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "login",
-          email,
-          password
-        }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'login', email, password }),
       });
       const data = await res.json();
-      if (data.status === "success") {
-        saveUser(data);
-        if (data.role && data.role.toLowerCase() === "admin") {
-          router.push("/admin");
+      if (data.status === 'success') {
+        // stockez le user dans localStorage/session, ou Context
+        // Exemple simple :
+        localStorage.setItem('user', JSON.stringify(data));
+        // Redirection selon rôle
+        if (data.role === 'Admin') {
+          router.push('/admin');
         } else {
-          router.push("/dashboard");
+          router.push('/dashboard');
         }
       } else {
-        setMsg({ text: "Erreur : " + (data.message || "Email ou mot de passe incorrect"), variant: "danger" });
+        setMsg('Erreur : ' + data.message);
       }
     } catch (err) {
-      console.error("Login error:", err);
-      setMsg({ text: "Erreur réseau, réessayez.", variant: "danger" });
-    } finally {
-      setLoading(false);
+      setMsg('Erreur réseau, réessayez');
     }
   }
 
   return (
-    <Layout>
-      <div className="d-flex justify-content-center">
-        <Card style={{ maxWidth: "400px", width: "100%" }} className="p-4">
-          <h2 className="mb-4 text-center">Se connecter</h2>
-          {msg.text && <Alert variant={msg.variant}>{msg.text}</Alert>}
-          <Form onSubmit={handleSubmit}>
-            <Form.Group className="mb-3" controlId="loginEmail">
-              <Form.Label>Email</Form.Label>
-              <Form.Control
-                type="email"
-                placeholder="Ton email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-              />
-            </Form.Group>
-            <Form.Group className="mb-3" controlId="loginPassword">
-              <Form.Label>Mot de passe</Form.Label>
-              <Form.Control
-                type="password"
-                placeholder="Mot de passe"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-              />
-            </Form.Group>
-            <Button variant="primary" type="submit" disabled={loading} className="w-100">
-              {loading ? "Connexion..." : "Se connecter"}
-            </Button>
-          </Form>
-          <div className="mt-3 text-center">
-            <a href="/forgot">Mot de passe oublié ?</a>
+    <div className="d-flex justify-content-center align-items-center vh-100" style={{ backgroundColor: '#f3f4f6' }}>
+      <div className="bg-white p-4 shadow card-custom" style={{ maxWidth: '400px', width: '100%' }}>
+        <h2 className="text-center mb-4">Se connecter</h2>
+        {msg && <div className="alert alert-warning alert-custom">{msg}</div>}
+        <form onSubmit={handleLogin}>
+          <div className="mb-3">
+            <label className="form-label">Email</label>
+            <input
+              type="email"
+              className="form-control"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+            />
           </div>
-        </Card>
+          <div className="mb-3">
+            <label className="form-label">Mot de passe</label>
+            <input
+              type="password"
+              className="form-control"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <button type="submit" className="btn btn-primary-custom w-100">Se connecter</button>
+        </form>
+        <div className="mt-3 text-center">
+          <Link href="/forgot" passHref>
+            <a>Mot de passe oublié?</a>
+          </Link>
+        </div>
+        <div className="mt-3 text-center">
+          Vous n'avez pas de compte?{' '}
+          <Link href="/register" passHref>
+            <a>Créer un compte</a>
+          </Link>
+        </div>
       </div>
-    </Layout>
+    </div>
   );
 }
 
