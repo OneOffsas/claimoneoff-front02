@@ -1,5 +1,6 @@
 // utils/api.js
-export const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/"; // remplace
+
+export const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/"; // Remplace par ton endpoint final
 
 export async function apiCall(action, data) {
   const res = await fetch(API_URL, {
