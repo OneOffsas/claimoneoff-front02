@@ -9,4 +9,3 @@ export async function apiCall(action, data) {
   })
   return res.json()
 }
-
