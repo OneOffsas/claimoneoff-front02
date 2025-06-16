@@ -1,40 +1,36 @@
 /* styles/globals.css */
 
-/* Import de la police depuis Google Fonts (ici Inter) */
+/* Import de la police Google Fonts (Inter) */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* Variables CSS pour personnaliser Bootstrap et le thème global */
+/* Variables CSS pour thème */
 :root {
-  /* Couleurs principales */
-  --bs-primary: #5b21b6;    /* violet foncé */
-  --bs-secondary: #6b7280;  /* gris */
-  --bs-success: #10b981;    /* vert pour succès */
-  --bs-danger: #ef4444;     /* rouge pour erreurs */
-  --bs-warning: #f59e0b;    /* orange pour alertes */
-  --bs-info: #3b82f6;       /* bleu clair pour info */
-  --bs-light: #f9fafb;      /* fond clair */
-  --bs-dark: #111827;       /* fond sombre */
+  --bs-primary: #5b21b6;
+  --bs-secondary: #6b7280;
+  --bs-success: #10b981;
+  --bs-danger: #ef4444;
+  --bs-warning: #f59e0b;
+  --bs-info: #3b82f6;
+  --bs-light: #f9fafb;
+  --bs-dark: #111827;
 
-  /* Police de base */
   --font-family-base: 'Inter', sans-serif;
-
-  /* Autres variables utiles */
   --border-radius-base: 0.5rem;
   --transition-base: 0.2s ease-in-out;
 }
 
-/* Réinitialisation simple */
+/* Reset basique */
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-/* Style du body */
+/* Body */
 body {
   font-family: var(--font-family-base);
-  background-color: #f3f4f6; /* gris très clair */
-  color: #1f2937;            /* gris foncé pour le texte */
+  background-color: #f3f4f6;
+  color: #1f2937;
   line-height: 1.6;
 }
 
@@ -59,17 +55,17 @@ p {
   margin-bottom: 1rem;
 }
 
-/* Formulaires : style commun */
+/* Inputs, selects, textarea, buttons */
 input, select, textarea, button {
   font-family: var(--font-family-base);
 }
 
-/* Container principal */
+/* Conteneur principal */
 .main-container {
   padding: 1rem;
 }
 
-/* Simple utilitaire pour carte personnalisée */
+/* Carte personnalisée */
 .card-custom {
   border-radius: var(--border-radius-base);
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -79,7 +75,7 @@ input, select, textarea, button {
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
-/* Barre latérale (exemple) */
+/* Sidebar */
 .sidebar {
   background-color: #ffffff;
   border-right: 1px solid #e5e7eb;
@@ -87,7 +83,7 @@ input, select, textarea, button {
   padding: 1rem;
 }
 
-/* Navigation principale */
+/* Liens de navigation */
 .nav-link-custom {
   display: block;
   padding: 0.5rem 1rem;
@@ -102,26 +98,14 @@ input, select, textarea, button {
   color: #ffffff;
 }
 
-/* Boutons personnalisés si besoin */
-.btn-primary-custom {
-  background-color: var(--bs-primary);
-  border-color: var(--bs-primary);
-}
-.btn-primary-custom:hover {
-  background-color: darken(var(--bs-primary), 10%);
-  border-color: darken(var(--bs-primary), 10%);
-}
-
-/* Messages / alertes */
+/* Alertes personnalisées */
 .alert-custom {
   border-radius: var(--border-radius-base);
 }
 
-/* Responsive adjustments si besoin */
+/* Ajustements responsive */
 @media (max-width: 768px) {
   .sidebar {
-    display: none; /* exemple : cacher sidebar sur mobile, à ajuster selon implémentation */
+    display: none;
   }
 }
-
-/* Ajoutez ici d’autres styles globaux ou personnalisations Bootstrap si nécessaire */
