@@ -1,9 +1,10 @@
 // components/Layout.js
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Navbar, Container, Nav, Offcanvas, NavDropdown, Button } from "react-bootstrap";
-import { getUser, clearUser } from "@/utils/auth";
+import { Navbar, Container, Nav, Offcanvas, Button } from "react-bootstrap";
+import { getUser, clearUser } from "../utils/auth";  // import relatif
 import { useRouter } from "next/router";
+import { Home, User, LogOut, LayoutDashboard, Ticket, Settings } from "lucide-react"; // icônes
 
 export default function Layout({ children }) {
   const [user, setUser] = useState(null);
@@ -19,17 +20,14 @@ export default function Layout({ children }) {
     router.push("/login");
   }
 
-  // Déterminer si admin pour afficher certains liens
   const isAdmin = user && user.role && user.role.toLowerCase() === "admin";
 
   return (
     <>
-      {/* Navbar en haut */}
       <Navbar bg="light" expand={false} className="mb-4 shadow-sm">
         <Container fluid>
-          <Navbar.Brand as={Link} href="/" className="fw-bold">
-            {/* Logo si tu as /public/logo.png */}
-            <img src="/logo.png" alt="Logo" width="30" height="30" className="d-inline-block align-top me-2" />
+          <Navbar.Brand as={Link} href="/" className="fw-bold d-flex align-items-center">
+            <img src="/logo.png" alt="Logo" width="30" height="30" className="me-2" />
             ClaimOneOff
           </Navbar.Brand>
           <Navbar.Toggle aria-controls="offcanvasNavbar" />
@@ -45,24 +43,42 @@ export default function Layout({ children }) {
               <Nav className="flex-column">
                 {user ? (
                   <>
-                    {/* Liens communs */}
-                    <Nav.Link as={Link} href="/dashboard">Tableau de bord</Nav.Link>
-                    <Nav.Link as={Link} href="/tickets">Mes Tickets</Nav.Link>
-                    <Nav.Link as={Link} href="/createticket">Créer Ticket</Nav.Link>
+                    <Nav.Link as={Link} href="/dashboard" className="d-flex align-items-center">
+                      <LayoutDashboard size={18} className="me-2" /> Tableau de bord
+                    </Nav.Link>
+                    <Nav.Link as={Link} href="/tickets" className="d-flex align-items-center">
+                      <Ticket size={18} className="me-2" /> Mes Tickets
+                    </Nav.Link>
+                    <Nav.Link as={Link} href="/createticket" className="d-flex align-items-center">
+                      <Ticket size={18} className="me-2" /> Créer Ticket
+                    </Nav.Link>
                     {isAdmin && (
                       <>
                         <hr />
-                        <Nav.Link as={Link} href="/admin">Admin - Tous Tickets</Nav.Link>
-                        <Nav.Link as={Link} href="/admin/stats">Admin - Statistiques</Nav.Link>
+                        <Nav.Link as={Link} href="/admin" className="d-flex align-items-center">
+                          <Settings size={18} className="me-2" /> Admin - Tous Tickets
+                        </Nav.Link>
+                        <Nav.Link as={Link} href="/admin/stats" className="d-flex align-items-center">
+                          <Settings size={18} className="me-2" /> Admin - Statistiques
+                        </Nav.Link>
                       </>
                     )}
                     <hr />
-                    <Button variant="outline-danger" size="sm" onClick={handleLogout}>Déconnexion</Button>
+                    <Button variant="outline-danger" size="sm" onClick={handleLogout} className="mt-2">
+                      <LogOut size={16} className="me-1" /> Déconnexion
+                    </Button>
                   </>
                 ) : (
                   <>
-                    <Nav.Link as={Link} href="/login">Se connecter</Nav.Link>
-                    <Nav.Link as={Link} href="/register">Créer un compte</Nav.Link>
+                    <Nav.Link as={Link} href="/" className="d-flex align-items-center">
+                      <Home size={18} className="me-2" /> Accueil
+                    </Nav.Link>
+                    <Nav.Link as={Link} href="/login" className="d-flex align-items-center">
+                      <User size={18} className="me-2" /> Se connecter
+                    </Nav.Link>
+                    <Nav.Link as={Link} href="/register" className="d-flex align-items-center">
+                      <User size={18} className="me-2" /> Créer un compte
+                    </Nav.Link>
                   </>
                 )}
               </Nav>
@@ -71,10 +87,7 @@ export default function Layout({ children }) {
         </Container>
       </Navbar>
 
-      {/* Contenu principal */}
-      <Container fluid>
-        {children}
-      </Container>
+      <Container fluid>{children}</Container>
     </>
   );
 }
