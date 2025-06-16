@@ -1,3 +1,4 @@
+// .eslintrc.json à la racine
 {
   "extends": "next/core-web-vitals"
 }
