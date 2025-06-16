@@ -1,31 +1,28 @@
 // pages/register.js
-import { useState } from "react";
-import Layout from "../components/Layout";
-import { Form, Button, Alert, Card } from "react-bootstrap";
-import { useRouter } from "next/router";
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
 
-const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/"; // ton endpoint
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 export default function Register() {
-  const [societe, setSociete] = useState("");
-  const [nom, setNom] = useState("");
-  const [prenom, setPrenom] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [msg, setMsg] = useState({ text: "", variant: "" });
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const [societe, setSociete] = useState('');
+  const [nom, setNom] = useState('');
+  const [prenom, setPrenom] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [msg, setMsg] = useState('');
 
-  async function handleSubmit(e) {
+  async function handleRegister(e) {
     e.preventDefault();
-    setLoading(true);
-    setMsg({ text: "", variant: "" });
+    setMsg('Inscription en cours...');
     try {
       const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: "register",
+          action: 'register',
           societe,
           nom,
           prenom,
@@ -34,87 +31,83 @@ export default function Register() {
         }),
       });
       const data = await res.json();
-      if (data.status === "success") {
-        setMsg({ text: "Compte créé ! Vous pouvez vous connecter.", variant: "success" });
-        setTimeout(() => {
-          router.push("/login");
-        }, 1500);
+      if (data.status === 'success') {
+        setMsg('Compte créé! Vous pouvez vous connecter.');
+        // après un court délai, rediriger vers login
+        setTimeout(() => router.push('/login'), 1500);
       } else {
-        setMsg({ text: "Erreur : " + (data.message || "Inconnue"), variant: "danger" });
+        setMsg('Erreur : ' + data.message);
       }
     } catch (err) {
-      console.error("Register error:", err);
-      setMsg({ text: "Erreur réseau, réessayez.", variant: "danger" });
-    } finally {
-      setLoading(false);
+      setMsg('Erreur réseau, réessayez.');
     }
   }
 
   return (
-    <Layout>
-      <div className="d-flex justify-content-center">
-        <Card style={{ maxWidth: "500px", width: "100%" }} className="p-4">
-          <h2 className="mb-4 text-center">Créer un compte</h2>
-          {msg.text && <Alert variant={msg.variant}>{msg.text}</Alert>}
-          <Form onSubmit={handleSubmit}>
-            <Form.Group className="mb-3" controlId="formSociete">
-              <Form.Label>Société</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Nom de la société"
-                value={societe}
-                onChange={e => setSociete(e.target.value)}
-                required
-              />
-            </Form.Group>
-            <Form.Group className="mb-3" controlId="formNom">
-              <Form.Label>Nom</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Ton nom"
-                value={nom}
-                onChange={e => setNom(e.target.value)}
-                required
-              />
-            </Form.Group>
-            <Form.Group className="mb-3" controlId="formPrenom">
-              <Form.Label>Prénom</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Ton prénom"
-                value={prenom}
-                onChange={e => setPrenom(e.target.value)}
-                required
-              />
-            </Form.Group>
-            <Form.Group className="mb-3" controlId="formEmail">
-              <Form.Label>Email</Form.Label>
-              <Form.Control
-                type="email"
-                placeholder="Ton email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-              />
-            </Form.Group>
-            <Form.Group className="mb-3" controlId="formPassword">
-              <Form.Label>Mot de passe</Form.Label>
-              <Form.Control
-                type="password"
-                placeholder="Mot de passe"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-              />
-            </Form.Group>
-            <Button variant="primary" type="submit" disabled={loading} className="w-100">
-              {loading ? "Création en cours..." : "Créer mon compte"}
-            </Button>
-          </Form>
-        </Card>
+    <div className="d-flex justify-content-center align-items-center vh-100" style={{ backgroundColor: '#f3f4f6' }}>
+      <div className="bg-white p-4 shadow card-custom" style={{ maxWidth: '400px', width: '100%' }}>
+        <h2 className="text-center mb-4">Créer un compte</h2>
+        {msg && <div className="alert alert-info alert-custom">{msg}</div>}
+        <form onSubmit={handleRegister}>
+          <div className="mb-3">
+            <label className="form-label">Société</label>
+            <input
+              type="text"
+              className="form-control"
+              value={societe}
+              onChange={e => setSociete(e.target.value)}
+              required
+            />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Nom</label>
+            <input
+              type="text"
+              className="form-control"
+              value={nom}
+              onChange={e => setNom(e.target.value)}
+              required
+            />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Prénom</label>
+            <input
+              type="text"
+              className="form-control"
+              value={prenom}
+              onChange={e => setPrenom(e.target.value)}
+              required
+            />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Email</label>
+            <input
+              type="email"
+              className="form-control"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Mot de passe</label>
+            <input
+              type="password"
+              className="form-control"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <button type="submit" className="btn btn-primary-custom w-100">Créer mon compte</button>
+        </form>
+        <div className="mt-3 text-center">
+          Vous avez déjà un compte?{' '}
+          <Link href="/login" passHref>
+            <a>Se connecter</a>
+          </Link>
+        </div>
       </div>
-    </Layout>
+    </div>
   );
 }
-
-
