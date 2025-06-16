@@ -1,233 +1,135 @@
 // pages/createticket.js
-import { useState, useEffect } from "react";
-import Layout from "../components/Layout";
-import { Form, Button, Alert, Card, Spinner, Modal } from "react-bootstrap";
-import { getUser } from "../utils/auth";
-import { useRouter } from "next/router";
+import { useState, useEffect } from 'react';
+import Layout from '../components/Layout';
 
-const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/"; // ton endpoint
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 export default function CreateTicket() {
   const [user, setUser] = useState(null);
-  const router = useRouter();
-  const [form, setForm] = useState({
-    societe: "",
-    utilisateur: "",
-    email: "",
-    role: "",
-    urgence: "",
-    numero_commande: "",
-    sla_cible: "",
-    problematique: "",
-    transporteur: "",
-    description: "",
-    fichiers_joints: "",
-    priorite: "",
-    type_action: "",
-    delai_resolution: "",
-    facturation: ""
-  });
-  const [msg, setMsg] = useState({ text: "", variant: "" });
-  const [loading, setLoading] = useState(false);
+  const [urgence, setUrgence] = useState('');
+  const [numeroCommande, setNumeroCommande] = useState('');
+  const [slaCible, setSlaCible] = useState('');
+  const [problematique, setProblematique] = useState('');
+  const [transporteur, setTransporteur] = useState('');
+  const [description, setDescription] = useState('');
+  const [msg, setMsg] = useState('');
 
   useEffect(() => {
-    const u = getUser();
-    if (!u) {
-      router.replace("/login");
-    } else {
-      setUser(u);
-      setForm(prev => ({
-        ...prev,
-        societe: u.societe || "",
-        utilisateur: u.nom + " " + u.prenom,
-        email: u.email,
-        role: u.role
-      }));
+    const stored = localStorage.getItem('user');
+    if (!stored) {
+      window.location.href = '/login';
+      return;
     }
-  }, [router]);
+    const u = JSON.parse(stored);
+    setUser(u);
+  }, []);
 
-  function handleChange(e) {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-  }
-
-  const [showModal, setShowModal] = useState(false);
-  useEffect(() => {
-    if (form.urgence === "Haute") {
-      setShowModal(true);
-    }
-  }, [form.urgence]);
-
-  async function handleSubmit(e) {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setMsg({ text: "", variant: "" });
+    if (!user) return;
+    setMsg('Création en cours...');
     try {
       const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "createTicket", ...form }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'createTicket',
+          societe: user.societe || '',
+          utilisateur: user.nom + ' ' + user.prenom,
+          email: user.email,
+          role: user.role,
+          urgence,
+          numero_commande: numeroCommande,
+          sla_cible: slaCible,
+          problematique,
+          transporteur,
+          description,
+          fichiers_joints: '' // à compléter si nécessaire
+        }),
       });
       const data = await res.json();
-      if (data.status === "success") {
-        setMsg({ text: "Ticket créé avec succès !", variant: "success" });
-        setTimeout(() => router.push("/dashboard"), 1500);
+      if (data.status === 'success') {
+        setMsg('Ticket créé ! ID: ' + data.id_ticket);
+        // Après un délai, rediriger vers dashboard
+        setTimeout(() => window.location.href = '/dashboard', 1500);
       } else {
-        setMsg({ text: "Erreur : " + (data.message || "Inconnue"), variant: "danger" });
+        setMsg('Erreur : ' + data.message);
       }
     } catch (err) {
-      console.error("CreateTicket error:", err);
-      setMsg({ text: "Erreur réseau, réessayez.", variant: "danger" });
-    } finally {
-      setLoading(false);
+      setMsg('Erreur réseau, réessayez.');
     }
-  }
+  };
 
+  if (!user) return null;
   return (
-    <Layout>
-      <div className="d-flex justify-content-center">
-        <Card style={{ maxWidth: "700px", width: "100%" }} className="p-4">
-          <h2 className="mb-4 text-center">Créer un Ticket</h2>
-          {msg.text && <Alert variant={msg.variant}>{msg.text}</Alert>}
-          <Form onSubmit={handleSubmit}>
-            {/* Société et Utilisateur en lecture seule */}
-            <Form.Group className="mb-3">
-              <Form.Label>Société</Form.Label>
-              <Form.Control type="text" name="societe" value={form.societe} readOnly />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Utilisateur</Form.Label>
-              <Form.Control type="text" name="utilisateur" value={form.utilisateur} readOnly />
-            </Form.Group>
-            <Form.Control type="hidden" name="email" value={form.email} />
-            <Form.Control type="hidden" name="role" value={form.role} />
-
-            <Form.Group className="mb-3">
-              <Form.Label>Urgence</Form.Label>
-              <Form.Select name="urgence" value={form.urgence} onChange={handleChange} required>
-                <option value="">Sélectionner</option>
-                <option value="Faible">Faible</option>
-                <option value="Normale">Normale</option>
-                <option value="Haute">Haute</option>
-              </Form.Select>
-            </Form.Group>
-
-            {showModal && (
-              <Modal show onHide={() => setShowModal(false)}>
-                <Modal.Header closeButton>
-                  <Modal.Title>Urgence Haute</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                  ⚠️ Vous avez choisi une urgence « Haute ». Ce service sera traité en priorité, surcoût indicatif de 5 €.
-                </Modal.Body>
-                <Modal.Footer>
-                  <Button variant="secondary" onClick={() => setShowModal(false)}>Fermer</Button>
-                </Modal.Footer>
-              </Modal>
-            )}
-
-            <Form.Group className="mb-3">
-              <Form.Label>Numéro de commande</Form.Label>
-              <Form.Control
-                type="text"
-                name="numero_commande"
-                value={form.numero_commande}
-                onChange={handleChange}
-                required
-              />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>SLA cible</Form.Label>
-              <Form.Control
-                type="text"
-                name="sla_cible"
-                value={form.sla_cible}
-                onChange={handleChange}
-              />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Problématique (titre)</Form.Label>
-              <Form.Control
-                type="text"
-                name="problematique"
-                value={form.problematique}
-                onChange={handleChange}
-                required
-              />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Transporteur</Form.Label>
-              <Form.Control
-                type="text"
-                name="transporteur"
-                value={form.transporteur}
-                onChange={handleChange}
-              />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Description détaillée</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={4}
-                name="description"
-                value={form.description}
-                onChange={handleChange}
-              />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Fichiers joints (lien)</Form.Label>
-              <Form.Control
-                type="text"
-                name="fichiers_joints"
-                value={form.fichiers_joints}
-                onChange={handleChange}
-                placeholder="URL Drive, Dropbox..."
-              />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Priorité</Form.Label>
-              <Form.Control
-                type="text"
-                name="priorite"
-                value={form.priorite}
-                onChange={handleChange}
-              />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Type d’action souhaitée</Form.Label>
-              <Form.Control
-                type="text"
-                name="type_action"
-                value={form.type_action}
-                onChange={handleChange}
-              />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Délai de résolution souhaité</Form.Label>
-              <Form.Control
-                type="text"
-                name="delai_resolution"
-                value={form.delai_resolution}
-                onChange={handleChange}
-              />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Facturation (coût indicatif)</Form.Label>
-              <Form.Control
-                type="text"
-                name="facturation"
-                value={form.facturation}
-                onChange={handleChange}
-                placeholder="Par ex. 5 € si urgence"
-              />
-            </Form.Group>
-
-            <Button variant="primary" type="submit" disabled={loading} className="w-100">
-              {loading ? <Spinner animation="border" size="sm" /> : "Créer le ticket"}
-            </Button>
-          </Form>
-        </Card>
-      </div>
+    <Layout user={user}>
+      <h1>Créer un ticket</h1>
+      {msg && <div className="alert alert-info alert-custom">{msg}</div>}
+      <form onSubmit={handleSubmit}>
+        <div className="mb-3">
+          <label className="form-label">Urgence</label>
+          <select className="form-select" value={urgence} onChange={e => setUrgence(e.target.value)} required>
+            <option value="">Choisir...</option>
+            <option value="Basse">Basse</option>
+            <option value="Moyenne">Moyenne</option>
+            <option value="Haute">Haute (+5€ de surcoût indicatif)</option>
+          </select>
+          {urgence === 'Haute' && (
+            <small className="text-danger">Attention : priorité haute, surcoût possible de 5€ (indicatif).</small>
+          )}
+        </div>
+        <div className="mb-3">
+          <label className="form-label">Numéro de commande</label>
+          <input
+            type="text"
+            className="form-control"
+            value={numeroCommande}
+            onChange={e => setNumeroCommande(e.target.value)}
+          />
+        </div>
+        <div className="mb-3">
+          <label className="form-label">SLA cible</label>
+          <input
+            type="text"
+            className="form-control"
+            value={slaCible}
+            onChange={e => setSlaCible(e.target.value)}
+            placeholder="ex: 48h"
+          />
+        </div>
+        <div className="mb-3">
+          <label className="form-label">Problématique</label>
+          <input
+            type="text"
+            className="form-control"
+            value={problematique}
+            onChange={e => setProblematique(e.target.value)}
+            required
+          />
+        </div>
+        <div className="mb-3">
+          <label className="form-label">Transporteur</label>
+          <select className="form-select" value={transporteur} onChange={e => setTransporteur(e.target.value)}>
+            <option value="">Choisir...</option>
+            <option value="DHL">DHL</option>
+            <option value="Colissimo">Colissimo</option>
+            <option value="UPS">UPS</option>
+            {/* Ajoutez selon votre liste */}
+          </select>
+        </div>
+        <div className="mb-3">
+          <label className="form-label">Description</label>
+          <textarea
+            className="form-control"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            rows="4"
+            required
+          />
+        </div>
+        <button type="submit" className="btn btn-primary-custom">Créer</button>
+      </form>
     </Layout>
   );
 }
+
