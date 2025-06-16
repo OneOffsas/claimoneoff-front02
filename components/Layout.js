@@ -1,61 +1,89 @@
 // components/Layout.js
+import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { FaHome, FaTicketAlt, FaChartBar, FaSignOutAlt } from 'react-icons/fa';
+import {
+  FaTicketAlt,
+  FaChartBar,
+  FaSignOutAlt,
+  FaPlus
+} from 'react-icons/fa';
 
 export default function Layout({ children, user }) {
   const router = useRouter();
 
-  // Si pas d'utilisateur (non connecté), on ne montre pas la sidebar
-  if (!user) {
-    return <>{children}</>;
-  }
+  // Si pas d'utilisateur, on rend juste les enfants (ex: page login/register)
+  if (!user) return <>{children}</>;
+
+  // Définition simple du menu selon le rôle
+  const navItems = [
+    {
+      href: '/dashboard',
+      label: 'Mes tickets',
+      Icon: FaTicketAlt
+    },
+    {
+      href: '/createticket',
+      label: 'Nouveau ticket',
+      Icon: FaPlus
+    },
+    // si c'est un admin, on ajoute le dashboard admin
+    ...(user.role === 'Admin'
+      ? [
+          {
+            href: '/admin',
+            label: 'Dashboard Admin',
+            Icon: FaChartBar
+          }
+        ]
+      : []),
+    {
+      href: '/logout',
+      label: 'Se déconnecter',
+      Icon: FaSignOutAlt
+    }
+  ];
 
   return (
-    <div className="d-flex">
+    <div className="d-flex vh-100">
       {/* Sidebar */}
-      <aside className="sidebar">
-        <div className="mb-4 text-center">
+      <aside
+        className="bg-light border-end"
+        style={{ width: 250, minHeight: '100vh' }}
+      >
+        <div className="text-center py-4">
           <Link href="/" passHref>
             <a>
-              <img src="/logo.png" alt="Logo" className="img-fluid" style={{ maxWidth: '100px' }} />
+              <img
+                src="/logo.png"
+                alt="Logo"
+                className="img-fluid"
+                style={{ maxWidth: '120px' }}
+              />
             </a>
           </Link>
         </div>
-        <nav>
-          <Link href="/dashboard" passHref>
-            <a className={`nav-link-custom ${router.pathname === '/dashboard' ? 'active' : ''}`}>
-              <FaTicketAlt style={{ marginRight: '8px' }} /> Mes tickets
-            </a>
-          </Link>
-          <Link href="/createticket" passHref>
-            <a className={`nav-link-custom ${router.pathname === '/createticket' ? 'active' : ''}`}>
-              <FaPlusIcon style={{ marginRight: '8px' }} /> Nouveau ticket
-            </a>
-          </Link>
-          {user.role === 'Admin' && (
-            <Link href="/admin" passHref>
-              <a className={`nav-link-custom ${router.pathname === '/admin' ? 'active' : ''}`}>
-                <FaChartBar style={{ marginRight: '8px' }} /> Dashboard Admin
+        <nav className="nav flex-column px-2">
+          {navItems.map(({ href, label, Icon }) => (
+            <Link href={href} key={href} passHref>
+              <a
+                className={`nav-link d-flex align-items-center ${
+                  router.pathname === href ? 'active fw-bold' : ''
+                }`}
+              >
+                <Icon className="me-2" />
+                {label}
               </a>
             </Link>
-          )}
-          <Link href="/logout" passHref>
-            <a className="nav-link-custom">
-              <FaSignOutAlt style={{ marginRight: '8px' }} /> Se déconnecter
-            </a>
-          </Link>
+          ))}
         </nav>
       </aside>
-      {/* Main content */}
-      <main className="flex-grow-1 main-container">
+
+      {/* Contenu principal */}
+      <main className="flex-grow-1 p-4 overflow-auto">
         {children}
       </main>
     </div>
   );
 }
-
-// Note : FaPlusIcon n'existe pas, remplacez par un icône de react-icons, par ex:
-import { FaHome, FaTicketAlt, FaChartBar, FaSignOutAlt, FaPlus } from 'react-icons/fa';
-// et utilisez <FaPlus /> au lieu de <FaPlusIcon />.
 
