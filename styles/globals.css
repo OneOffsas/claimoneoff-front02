@@ -1,8 +1,18 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* styles/globals.css */
 
-/* Styles persos pour pousser le côté design */
-body {
-  @apply bg-gradient-to-tr from-violet-600 to-blue-500 min-h-screen;
+/* Override des variables Bootstrap (optionnel) */
+:root {
+  --bs-primary: #7c3aed; /* violet personnalisé */
+  --bs-secondary: #6c757d;
+  --bs-success: #28a745;
+  --bs-info: #17a2b8;
+  --bs-warning: #ffc107;
+  --bs-danger: #dc3545;
 }
+
+/* Overrides ou styles globaux supplémentaires */
+body {
+  background-color: #f0f2f5;
+}
+
+/* Tu peux ajouter ici des styles globaux que tu veux appliquer partout */
