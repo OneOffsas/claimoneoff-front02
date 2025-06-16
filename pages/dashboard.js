@@ -1,11 +1,11 @@
 // pages/dashboard.js
 import { useState, useEffect } from "react";
-import Layout from "@/components/Layout";
+import Layout from "../components/Layout";
 import { Table, Button, Modal, Badge, Spinner } from "react-bootstrap";
-import { getUser } from "@/utils/auth";
+import { getUser } from "../utils/auth";
 import { useRouter } from "next/router";
 
-const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/"; // remplace
+const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/"; // ton endpoint
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
@@ -46,9 +46,11 @@ export default function Dashboard() {
   }
 
   function getBadgeVariant(statut) {
-    if (statut.toLowerCase() === "résolu" || statut.toLowerCase() === "resolu") return "success";
-    if (statut.toLowerCase() === "en cours" || statut.toLowerCase() === "encours") return "primary";
-    if (statut.toLowerCase() === "remboursé" || statut.toLowerCase() === "rembourse") return "warning";
+    if (!statut) return "secondary";
+    const s = statut.toLowerCase();
+    if (s.includes("résolu") || s.includes("resolu")) return "success";
+    if (s.includes("en cours") || s.includes("encours")) return "primary";
+    if (s.includes("remboursé") || s.includes("rembourse")) return "warning";
     return "secondary";
   }
 
@@ -103,7 +105,6 @@ export default function Dashboard() {
         </>
       )}
 
-      {/* Modal pour voir détails */}
       {selectedTicket && (
         <Modal show onHide={() => setSelectedTicket(null)} size="lg">
           <Modal.Header closeButton>
@@ -133,7 +134,6 @@ export default function Dashboard() {
             <p><strong>Type action :</strong> {selectedTicket.type_action}</p>
             <p><strong>Délai résolution :</strong> {selectedTicket.delai_resolution}</p>
             <p><strong>Facturation :</strong> {selectedTicket.facturation}</p>
-            {/* Discussion si tu veux l’afficher ici */}
             {selectedTicket.discussion && (
               <div className="mt-3">
                 <h5>Discussion</h5>
@@ -153,4 +153,3 @@ export default function Dashboard() {
     </Layout>
   );
 }
-
