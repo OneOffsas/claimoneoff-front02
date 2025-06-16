@@ -1,102 +1,69 @@
-import Sidebar from "../components/Sidebar";
-import { useEffect, useState } from "react";
-
-const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/";
+import Link from "next/link";
+import { useState } from "react";
 
 export default function Dashboard() {
-  const [user, setUser] = useState(null);
-  const [tickets, setTickets] = useState([]);
-  const [stats, setStats] = useState({total: 0, ouverts: 0, urgents: 0});
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const userLocal = JSON.parse(localStorage.getItem("claimUser"));
-    setUser(userLocal);
-    if (userLocal) {
-      fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({action: "getTickets", email: userLocal.email, role: userLocal.role})
-      })
-      .then(r => r.json())
-      .then(data => {
-        setTickets(data.tickets || []);
-        setStats({
-          total: (data.tickets||[]).length,
-          ouverts: (data.tickets||[]).filter(t => t.statut==="En cours").length,
-          urgents: (data.tickets||[]).filter(t => t.urgence==="Oui").length
-        });
-        setLoading(false);
-      });
-    }
-  }, []);
-
-  if (!user) return <div>Connexion requise.</div>;
+  // Simule quelques tickets pour exemple
+  const [tickets, setTickets] = useState([
+    { id: 1, sujet: "Problème livraison", statut: "Ouvert", date: "2025-06-15" },
+    { id: 2, sujet: "Erreur de préparation", statut: "En cours", date: "2025-06-14" },
+  ]);
 
   return (
-    <div className="d-flex" style={{minHeight:"100vh"}}>
-      <Sidebar role={user.role} active="dashboard"/>
-      <div className="container-fluid p-5" style={{background:"linear-gradient(120deg,#f4f7ff,#dbeafe 50%,#e6e1ff)"}}>
-        <h2 className="fw-bold mb-4">Bienvenue, {user.prenom} 👋</h2>
-        <div className="row mb-5">
-          <div className="col-md-4">
-            <div className="card border-0 shadow text-center p-4 mb-3" style={{borderRadius:18}}>
-              <div className="fw-bold text-primary" style={{fontSize:22}}>Tickets total</div>
-              <div className="display-5">{stats.total}</div>
-            </div>
-          </div>
-          <div className="col-md-4">
-            <div className="card border-0 shadow text-center p-4 mb-3" style={{borderRadius:18}}>
-              <div className="fw-bold text-success" style={{fontSize:22}}>Ouverts</div>
-              <div className="display-5">{stats.ouverts}</div>
-            </div>
-          </div>
-          <div className="col-md-4">
-            <div className="card border-0 shadow text-center p-4 mb-3" style={{borderRadius:18}}>
-              <div className="fw-bold text-danger" style={{fontSize:22}}>Urgences</div>
-              <div className="display-5">{stats.urgents}</div>
-            </div>
-          </div>
+    <div className="min-h-screen flex bg-gradient-to-tr from-violet-600 to-blue-500">
+      {/* Sidebar */}
+      <aside className="w-60 bg-white shadow-xl flex flex-col p-6">
+        <div className="flex items-center justify-center mb-8">
+          <img src="/logo.png" alt="Logo ClaimOneOff" className="w-16 h-16" />
         </div>
-        <h4 className="mb-3">Derniers tickets</h4>
-        {loading ? <div>Chargement...</div> : (
-        <div className="table-responsive">
-          <table className="table table-striped table-hover align-middle rounded shadow-sm">
+        <nav className="flex flex-col gap-4 text-lg">
+          <Link href="/dashboard" className="font-semibold text-violet-700 hover:underline">Dashboard</Link>
+          <Link href="/tickets" className="hover:text-violet-700">Tous les tickets</Link>
+          <Link href="/createticket" className="hover:text-violet-700">Créer un ticket</Link>
+        </nav>
+        <div className="flex-1" />
+        <div className="text-gray-400 text-xs mt-6">© 2025 ClaimOneOff</div>
+      </aside>
+      {/* Main */}
+      <main className="flex-1 p-10">
+        <h1 className="text-3xl font-bold text-white mb-6">Vue d&apos;ensemble des tickets</h1>
+        <div className="bg-white rounded-xl shadow-xl p-6">
+          <table className="w-full text-left border-separate border-spacing-y-2">
             <thead>
-              <tr>
-                <th>Ticket #</th>
-                <th>Problématique</th>
-                <th>Date</th>
+              <tr className="text-violet-700">
+                <th>ID</th>
+                <th>Sujet</th>
                 <th>Statut</th>
-                <th>Urgence</th>
-                <th>Actions</th>
+                <th>Date</th>
+                <th>Détail</th>
               </tr>
             </thead>
             <tbody>
-              {tickets.slice(0,5).map(t => (
-                <tr key={t.id_ticket}>
-                  <td>{t.id_ticket}</td>
-                  <td>{t.problematique}</td>
-                  <td>{t.date_ouverture}</td>
+              {tickets.map((t) => (
+                <tr key={t.id} className="hover:bg-violet-50 transition rounded-lg">
+                  <td>{t.id}</td>
+                  <td>{t.sujet}</td>
                   <td>
-                    <span className={"badge "+(t.statut==="En cours"?"bg-warning text-dark":(t.statut==="Fermé"?"bg-success":"bg-secondary"))}>{t.statut}</span>
+                    <span className={
+                      t.statut === "Ouvert"
+                        ? "bg-green-100 text-green-700 px-2 py-1 rounded"
+                        : "bg-yellow-100 text-yellow-700 px-2 py-1 rounded"
+                    }>{t.statut}</span>
                   </td>
+                  <td>{t.date}</td>
                   <td>
-                    {t.urgence === "Oui" && <span className="badge bg-danger">Urgent</span>}
-                  </td>
-                  <td>
-                    <a href={`/tickets/${t.id_ticket}`} className="btn btn-sm btn-outline-primary">Voir</a>
+                    <Link href={`/tickets/${t.id}`} className="text-violet-700 underline hover:text-violet-900">Voir</Link>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>)}
-        <div className="mt-4">
-          <a href="/tickets" className="btn btn-primary rounded-pill">Voir tous mes tickets</a>
-          <a href="/createticket" className="btn btn-outline-success ms-3 rounded-pill">Nouveau ticket</a>
+          <div className="mt-6 flex gap-4">
+            <Link href="/tickets" className="bg-violet-600 text-white px-4 py-2 rounded shadow hover:bg-violet-800">Voir tous les tickets</Link>
+            <Link href="/createticket" className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-800">Créer un ticket</Link>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
+
