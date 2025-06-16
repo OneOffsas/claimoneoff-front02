@@ -1,113 +1,50 @@
 // pages/register.js
-import { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+import { useState } from "react"
+import { useRouter } from "next/router"
+import { apiCall } from "../utils/api"
+import Link from "next/link"
 
 export default function Register() {
-  const router = useRouter();
-  const [societe, setSociete] = useState('');
-  const [nom, setNom] = useState('');
-  const [prenom, setPrenom] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [msg, setMsg] = useState('');
+  const [form, setForm] = useState({ societe:"", nom:"", prenom:"", email:"", password:"" })
+  const [msg, setMsg] = useState("")
+  const router = useRouter()
 
-  async function handleRegister(e) {
-    e.preventDefault();
-    setMsg('Inscription en cours...');
-    try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'register',
-          societe,
-          nom,
-          prenom,
-          email,
-          password,
-        }),
-      });
-      const data = await res.json();
-      if (data.status === 'success') {
-        setMsg('Compte créé! Vous pouvez vous connecter.');
-        // après un court délai, rediriger vers login
-        setTimeout(() => router.push('/login'), 1500);
-      } else {
-        setMsg('Erreur : ' + data.message);
-      }
-    } catch (err) {
-      setMsg('Erreur réseau, réessayez.');
+  async function submit(e) {
+    e.preventDefault()
+    setMsg("Inscription…")
+    const data = await apiCall("register", form)
+    if (data.status==="success") {
+      setMsg("Compte créé ! Redirection…")
+      setTimeout(()=>router.push("/login"),1000)
+    } else {
+      setMsg(data.message)
     }
   }
 
   return (
-    <div className="d-flex justify-content-center align-items-center vh-100" style={{ backgroundColor: '#f3f4f6' }}>
-      <div className="bg-white p-4 shadow card-custom" style={{ maxWidth: '400px', width: '100%' }}>
-        <h2 className="text-center mb-4">Créer un compte</h2>
-        {msg && <div className="alert alert-info alert-custom">{msg}</div>}
-        <form onSubmit={handleRegister}>
-          <div className="mb-3">
-            <label className="form-label">Société</label>
-            <input
-              type="text"
-              className="form-control"
-              value={societe}
-              onChange={e => setSociete(e.target.value)}
-              required
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">Nom</label>
-            <input
-              type="text"
-              className="form-control"
-              value={nom}
-              onChange={e => setNom(e.target.value)}
-              required
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">Prénom</label>
-            <input
-              type="text"
-              className="form-control"
-              value={prenom}
-              onChange={e => setPrenom(e.target.value)}
-              required
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">Email</label>
-            <input
-              type="email"
-              className="form-control"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">Mot de passe</label>
-            <input
-              type="password"
-              className="form-control"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <button type="submit" className="btn btn-primary-custom w-100">Créer mon compte</button>
+    <div className="d-flex justify-content-center align-items-center vh-100 bg-gradient">
+      <div className="card p-4 shadow w-100" style={{maxWidth: 400}}>
+        <h2 className="mb-4 text-center">Créer un compte</h2>
+        <form onSubmit={submit}>
+          {["societe","nom","prenom","email","password"].map((k,i)=>(
+            <div key={k} className="mb-3">
+              <label className="form-label">{k.charAt(0).toUpperCase()+k.slice(1)}</label>
+              <input
+                type={k==="email"?"email":k==="password"?"password":"text"}
+                className="form-control"
+                value={form[k]}
+                onChange={e=>setForm({...form,[k]:e.target.value})}
+                required
+              />
+            </div>
+          ))}
+          <button className="btn btn-success w-100">Créer mon compte</button>
         </form>
-        <div className="mt-3 text-center">
-          Vous avez déjà un compte?{' '}
-          <Link href="/login" passHref>
-            <a>Se connecter</a>
-          </Link>
-        </div>
+        {msg && <div className="alert alert-info mt-3">{msg}</div>}
+        <p className="text-center mt-2">
+          <Link href="/login"><a>Déjà inscrit ?</a></Link>
+        </p>
       </div>
     </div>
-  );
+  )
 }
