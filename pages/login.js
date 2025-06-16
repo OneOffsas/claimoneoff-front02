@@ -1,11 +1,11 @@
 // pages/login.js
 import { useState, useEffect } from "react";
-import Layout from "@/components/Layout";
+import Layout from "../components/Layout";
 import { Form, Button, Alert, Card } from "react-bootstrap";
 import { useRouter } from "next/router";
-import { saveUser, getUser } from "@/utils/auth";
+import { saveUser, getUser } from "../utils/auth";
 
-const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/"; // Remplace par ton endpoint
+const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/"; // ton endpoint
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -14,11 +14,9 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // Si déjà connecté, rediriger automatiquement
   useEffect(() => {
     const u = getUser();
     if (u) {
-      // rediriger selon rôle
       if (u.role && u.role.toLowerCase() === "admin") {
         router.replace("/admin");
       } else {
@@ -43,9 +41,7 @@ export default function Login() {
       });
       const data = await res.json();
       if (data.status === "success") {
-        // data: { status: "success", id_user, societe, nom, prenom, email, role }
         saveUser(data);
-        // redirection selon rôle
         if (data.role && data.role.toLowerCase() === "admin") {
           router.push("/admin");
         } else {
@@ -101,3 +97,4 @@ export default function Login() {
     </Layout>
   );
 }
+
