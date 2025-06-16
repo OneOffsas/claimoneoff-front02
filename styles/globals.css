@@ -1,107 +1,14 @@
 /* styles/globals.css */
 
-/* Import Bootstrap overrides ou customisations ici si besoin */
-/* Exemple : customisations de couleurs globales */
-:root {
-  --primary-color: #6f42c1;    /* violet */
-  --primary-hover: #5a32a3;
-  --bg-gradient-start: #6f42c1;
-  --bg-gradient-end: #007bff;
+/* simple gradient background */
+.bg-gradient {
+  background: linear-gradient(135deg, #6f42c1 0%, #0d6efd 100%);
 }
 
-/* Sidebar */
-.sidebar {
-  width: 240px;
-  background-color: #f8f9fa;
-  min-height: 100vh;
-  padding: 1rem;
-  border-right: 1px solid #e0e0e0;
-  position: fixed;
-}
+/* Sidebar links */
+.nav-link.active { background-color: #e9ecef; border-radius: 4px; }
 
-.main-container {
-  margin-left: 240px;
-  padding: 1.5rem;
-}
+/* main container */
+.main-container { padding: 1rem; }
 
-/* Liens du sidebar */
-.nav-link-custom {
-  display: flex;
-  align-items: center;
-  padding: 0.5rem 0.75rem;
-  color: #333;
-  text-decoration: none;
-  border-radius: 0.25rem;
-  margin-bottom: 0.25rem;
-  font-weight: 500;
-}
-
-.nav-link-custom:hover {
-  background-color: #e2e6ea;
-  color: #000;
-}
-
-.nav-link-custom.active {
-  background-color: var(--primary-color);
-  color: white;
-}
-
-/* Boutons custom */
-.btn-primary-custom {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
-  color: white;
-}
-
-.btn-primary-custom:hover {
-  background-color: var(--primary-hover);
-  border-color: var(--primary-hover);
-}
-
-/* Alert custom (Bootstrap base alert-info override si besoin) */
-.alert-custom {
-  border-radius: 0.25rem;
-}
-
-/* Form container centré sur page login/register */
-.auth-container {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(to bottom right, var(--bg-gradient-start), var(--bg-gradient-end));
-}
-
-.auth-box {
-  background: white;
-  padding: 2rem;
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  width: 100%;
-  max-width: 400px;
-}
-
-/* Titles */
-.h1-custom {
-  color: var(--primary-color);
-  margin-bottom: 1rem;
-  text-align: center;
-}
-
-/* Table tickets */
-.table-hover-custom tbody tr:hover {
-  background-color: #f1f1f1;
-  cursor: pointer;
-}
-
-/* Responsive adjustments */
-@media (max-width: 767px) {
-  .sidebar {
-    display: none;
-  }
-  .main-container {
-    margin-left: 0;
-  }
-}
-
-/* Autres custom selon besoin... */
+body { font-family: "Segoe UI", sans-serif; }
