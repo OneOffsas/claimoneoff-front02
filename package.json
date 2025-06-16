@@ -6,8 +6,10 @@
     "next": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "recharts": "latest",
-    "lucide-react": "latest"
+    "bootstrap": "latest",
+    "react-bootstrap": "latest",
+    "lucide-react": "latest",
+    "recharts": "latest"
   },
   "scripts": {
     "dev": "next dev",
@@ -15,8 +17,10 @@
     "start": "next start"
   },
   "devDependencies": {
-    "autoprefixer": "^10.4.21",
+    "tailwindcss": "^4.1.10",
     "postcss": "^8.5.5",
-    "tailwindcss": "^4.1.10"
+    "autoprefixer": "^10.4.21",
+    "eslint": "latest",
+    "eslint-config-next": "latest"
   }
 }
