@@ -1,69 +1,156 @@
-import Link from "next/link";
-import { useState } from "react";
+// pages/dashboard.js
+import { useState, useEffect } from "react";
+import Layout from "@/components/Layout";
+import { Table, Button, Modal, Badge, Spinner } from "react-bootstrap";
+import { getUser } from "@/utils/auth";
+import { useRouter } from "next/router";
+
+const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/"; // remplace
 
 export default function Dashboard() {
-  // Simule quelques tickets pour exemple
-  const [tickets, setTickets] = useState([
-    { id: 1, sujet: "Problème livraison", statut: "Ouvert", date: "2025-06-15" },
-    { id: 2, sujet: "Erreur de préparation", statut: "En cours", date: "2025-06-14" },
-  ]);
+  const [user, setUser] = useState(null);
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const u = getUser();
+    if (!u) {
+      router.replace("/login");
+    } else {
+      setUser(u);
+      fetchTickets(u);
+    }
+  }, [router]);
+
+  async function fetchTickets(u) {
+    setLoading(true);
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "getTickets", email: u.email, role: u.role }),
+      });
+      const data = await res.json();
+      if (data.status === "success") {
+        setTickets(data.tickets || []);
+      } else {
+        console.error("Erreur fetchTickets:", data);
+      }
+    } catch (err) {
+      console.error("fetchTickets network error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function getBadgeVariant(statut) {
+    if (statut.toLowerCase() === "résolu" || statut.toLowerCase() === "resolu") return "success";
+    if (statut.toLowerCase() === "en cours" || statut.toLowerCase() === "encours") return "primary";
+    if (statut.toLowerCase() === "remboursé" || statut.toLowerCase() === "rembourse") return "warning";
+    return "secondary";
+  }
 
   return (
-    <div className="min-h-screen flex bg-gradient-to-tr from-violet-600 to-blue-500">
-      {/* Sidebar */}
-      <aside className="w-60 bg-white shadow-xl flex flex-col p-6">
-        <div className="flex items-center justify-center mb-8">
-          <img src="/logo.png" alt="Logo ClaimOneOff" className="w-16 h-16" />
+    <Layout>
+      <h1 className="mb-4">Mes Tickets</h1>
+      {loading ? (
+        <div className="text-center">
+          <Spinner animation="border" variant="primary" />
         </div>
-        <nav className="flex flex-col gap-4 text-lg">
-          <Link href="/dashboard" className="font-semibold text-violet-700 hover:underline">Dashboard</Link>
-          <Link href="/tickets" className="hover:text-violet-700">Tous les tickets</Link>
-          <Link href="/createticket" className="hover:text-violet-700">Créer un ticket</Link>
-        </nav>
-        <div className="flex-1" />
-        <div className="text-gray-400 text-xs mt-6">© 2025 ClaimOneOff</div>
-      </aside>
-      {/* Main */}
-      <main className="flex-1 p-10">
-        <h1 className="text-3xl font-bold text-white mb-6">Vue d&apos;ensemble des tickets</h1>
-        <div className="bg-white rounded-xl shadow-xl p-6">
-          <table className="w-full text-left border-separate border-spacing-y-2">
-            <thead>
-              <tr className="text-violet-700">
-                <th>ID</th>
-                <th>Sujet</th>
-                <th>Statut</th>
-                <th>Date</th>
-                <th>Détail</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tickets.map((t) => (
-                <tr key={t.id} className="hover:bg-violet-50 transition rounded-lg">
-                  <td>{t.id}</td>
-                  <td>{t.sujet}</td>
-                  <td>
-                    <span className={
-                      t.statut === "Ouvert"
-                        ? "bg-green-100 text-green-700 px-2 py-1 rounded"
-                        : "bg-yellow-100 text-yellow-700 px-2 py-1 rounded"
-                    }>{t.statut}</span>
-                  </td>
-                  <td>{t.date}</td>
-                  <td>
-                    <Link href={`/tickets/${t.id}`} className="text-violet-700 underline hover:text-violet-900">Voir</Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="mt-6 flex gap-4">
-            <Link href="/tickets" className="bg-violet-600 text-white px-4 py-2 rounded shadow hover:bg-violet-800">Voir tous les tickets</Link>
-            <Link href="/createticket" className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-800">Créer un ticket</Link>
+      ) : (
+        <>
+          <div className="mb-3">
+            <Button variant="success" onClick={() => router.push("/createticket")}>
+              Créer un ticket
+            </Button>
           </div>
-        </div>
-      </main>
-    </div>
+          {tickets.length === 0 ? (
+            <p>Aucun ticket trouvé.</p>
+          ) : (
+            <Table striped bordered hover responsive>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Date ouverture</th>
+                  <th>Urgence</th>
+                  <th>Sujet</th>
+                  <th>Statut</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tickets.map(ticket => (
+                  <tr key={ticket.id_ticket}>
+                    <td className="font-monospace">{ticket.id_ticket}</td>
+                    <td>{ticket.date_ouverture}</td>
+                    <td>{ticket.urgence}</td>
+                    <td>{ticket.problematique}</td>
+                    <td>
+                      <Badge bg={getBadgeVariant(ticket.statut)}>{ticket.statut}</Badge>
+                    </td>
+                    <td>
+                      <Button size="sm" onClick={() => setSelectedTicket(ticket)}>
+                        Voir
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          )}
+        </>
+      )}
+
+      {/* Modal pour voir détails */}
+      {selectedTicket && (
+        <Modal show onHide={() => setSelectedTicket(null)} size="lg">
+          <Modal.Header closeButton>
+            <Modal.Title>Ticket {selectedTicket.id_ticket}</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <p><strong>Utilisateur :</strong> {selectedTicket.utilisateur}</p>
+            <p><strong>Email :</strong> {selectedTicket.email}</p>
+            <p><strong>Date ouverture :</strong> {selectedTicket.date_ouverture}</p>
+            <p><strong>Urgence :</strong> {selectedTicket.urgence}</p>
+            <p><strong>Numéro commande :</strong> {selectedTicket.numero_commande}</p>
+            <p><strong>SLA cible :</strong> {selectedTicket.sla_cible}</p>
+            <p><strong>Problématique :</strong> {selectedTicket.problematique}</p>
+            <p><strong>Transporteur :</strong> {selectedTicket.transporteur}</p>
+            <p><strong>Description :</strong> {selectedTicket.description}</p>
+            {selectedTicket.fichiers_joints && (
+              <p>
+                <strong>Fichier joint :</strong>{" "}
+                <a href={selectedTicket.fichiers_joints} target="_blank" rel="noopener noreferrer">
+                  Voir le fichier
+                </a>
+              </p>
+            )}
+            <p><strong>Statut :</strong> {selectedTicket.statut}</p>
+            <p><strong>Date MAJ :</strong> {selectedTicket.date_maj}</p>
+            <p><strong>Priorité :</strong> {selectedTicket.priorite}</p>
+            <p><strong>Type action :</strong> {selectedTicket.type_action}</p>
+            <p><strong>Délai résolution :</strong> {selectedTicket.delai_resolution}</p>
+            <p><strong>Facturation :</strong> {selectedTicket.facturation}</p>
+            {/* Discussion si tu veux l’afficher ici */}
+            {selectedTicket.discussion && (
+              <div className="mt-3">
+                <h5>Discussion</h5>
+                <pre style={{ whiteSpace: "pre-wrap", background: "#f8f9fa", padding: "10px" }}>
+                  {selectedTicket.discussion}
+                </pre>
+              </div>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setSelectedTicket(null)}>
+              Fermer
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      )}
+    </Layout>
   );
 }
 
