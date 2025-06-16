@@ -1,11 +1,11 @@
 // pages/admin.js
 import { useState, useEffect } from "react";
-import Layout from "@/components/Layout";
-import { Table, Button, Modal, Badge, Spinner, Row, Col, Card } from "react-bootstrap";
-import { getUser } from "@/utils/auth";
+import Layout from "../components/Layout";
+import { Table, Button, Modal, Badge, Spinner, Row, Col, Card, Form } from "react-bootstrap";
+import { getUser } from "../utils/auth";
 import { useRouter } from "next/router";
 
-const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/"; // remplace
+const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/"; // ton endpoint
 
 export default function Admin() {
   const [user, setUser] = useState(null);
@@ -22,17 +22,17 @@ export default function Admin() {
       router.replace("/dashboard");
     } else {
       setUser(u);
-      fetchTickets();
+      fetchTickets(u);
     }
   }, [router]);
 
-  async function fetchTickets() {
+  async function fetchTickets(u) {
     setLoading(true);
     try {
       const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "getTickets", email: user.email, role: user.role }),
+        body: JSON.stringify({ action: "getTickets", email: u.email, role: u.role }),
       });
       const data = await res.json();
       if (data.status === "success") {
@@ -47,20 +47,20 @@ export default function Admin() {
     }
   }
 
-  // KPI
   const total = tickets.length;
-  const enCours = tickets.filter(t => t.statut.toLowerCase() === "en cours").length;
-  const resolus = tickets.filter(t => t.statut.toLowerCase() === "résolu" || t.statut.toLowerCase() === "resolu").length;
-  const rembourse = tickets.filter(t => t.statut.toLowerCase() === "remboursé" || t.statut.toLowerCase() === "rembourse").length;
+  const enCours = tickets.filter(t => t.statut && t.statut.toLowerCase().includes("en cours")).length;
+  const resolus = tickets.filter(t => t.statut && (t.statut.toLowerCase().includes("résolu") || t.statut.toLowerCase().includes("resolu"))).length;
+  const rembourse = tickets.filter(t => t.statut && (t.statut.toLowerCase().includes("remboursé") || t.statut.toLowerCase().includes("rembourse"))).length;
 
   function getBadgeVariant(statut) {
-    if (statut.toLowerCase() === "résolu" || statut.toLowerCase() === "resolu") return "success";
-    if (statut.toLowerCase() === "en cours" || statut.toLowerCase() === "encours") return "primary";
-    if (statut.toLowerCase() === "remboursé" || statut.toLowerCase() === "rembourse") return "warning";
+    if (!statut) return "secondary";
+    const s = statut.toLowerCase();
+    if (s.includes("résolu") || s.includes("resolu")) return "success";
+    if (s.includes("en cours") || s.includes("encours")) return "primary";
+    if (s.includes("remboursé") || s.includes("rembourse")) return "warning";
     return "secondary";
   }
 
-  // Permettre admin de changer le statut
   async function handleChangeStatus(ticketId, newStatus) {
     try {
       const res = await fetch(API_URL, {
@@ -70,7 +70,7 @@ export default function Admin() {
       });
       const data = await res.json();
       if (data.status === "success") {
-        fetchTickets();
+        fetchTickets(user);
         if (selectedTicket && selectedTicket.id_ticket === ticketId) {
           setSelectedTicket(prev => ({ ...prev, statut: newStatus, date_maj: new Date().toISOString() }));
         }
@@ -91,7 +91,6 @@ export default function Admin() {
         </div>
       ) : (
         <>
-          {/* KPI Cards */}
           <Row className="mb-4">
             <Col md={3}>
               <Card className="text-center">
@@ -127,7 +126,6 @@ export default function Admin() {
             </Col>
           </Row>
 
-          {/* Tableau */}
           <Table striped bordered hover responsive>
             <thead>
               <tr>
@@ -163,7 +161,6 @@ export default function Admin() {
         </>
       )}
 
-      {/* Modal détails + action statut */}
       {selectedTicket && (
         <Modal show onHide={() => setSelectedTicket(null)} size="lg">
           <Modal.Header closeButton>
@@ -186,10 +183,9 @@ export default function Admin() {
                 </a>
               </p>
             )}
-            <p><strong>Statut :</strong> 
-              <Badge bg={getBadgeVariant(selectedTicket.statut)} className="ms-2">
-                {selectedTicket.statut}
-              </Badge>
+            <p>
+              <strong>Statut :</strong>{" "}
+              <Badge bg={getBadgeVariant(selectedTicket.statut)}>{selectedTicket.statut}</Badge>
             </p>
             <p><strong>Date MAJ :</strong> {selectedTicket.date_maj}</p>
             <p><strong>Priorité :</strong> {selectedTicket.priorite}</p>
@@ -204,7 +200,6 @@ export default function Admin() {
                 </pre>
               </div>
             )}
-            {/* Sélect pour changer statut */}
             <Form.Group className="mt-3">
               <Form.Label>Changer le statut :</Form.Label>
               <Form.Select
@@ -216,7 +211,6 @@ export default function Admin() {
                 <option value="Remboursé">Remboursé</option>
                 <option value="En attente">En attente</option>
                 <option value="Réclamation">Réclamation</option>
-                {/* Ajoute d’autres statuts si besoin */}
               </Form.Select>
             </Form.Group>
           </Modal.Body>
