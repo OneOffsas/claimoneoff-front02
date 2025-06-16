@@ -1,6 +1,7 @@
+// pages/admin.js
 import { useState, useEffect } from "react";
-import Sidebar from "@/components/Sidebar";
-import { CircleCheck, CircleAlert, LoaderCircle, Ticket, User } from "lucide-react";
+import Sidebar from "../components/Sidebar";
+import { CircleCheck, LoaderCircle, Ticket } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -18,7 +19,11 @@ export default function Admin() {
   async function fetchTickets() {
     setLoading(true);
     try {
-      // Ex : appel à ton API
+      // Exemple d'appel API, à remplacer par le tien
+      // const res = await fetch(API_URL, { ... });
+      // const data = await res.json();
+      // setTickets(data.tickets);
+      // Ici on simule :
       setTickets([
         {
           id: "TCKT_12345",
@@ -31,18 +36,10 @@ export default function Admin() {
           description: "Le colis n&apos;est pas arrivé.",
           transporteur: "Colissimo",
         },
-        {
-          id: "TCKT_67890",
-          utilisateur: "Yann Martin",
-          email: "yann@autre.fr",
-          date_ouverture: "2025-06-14 15:12",
-          statut: "Résolu",
-          urgence: "Normale",
-          sujet: "Retard livraison",
-          description: "Livraison annoncée mais rien reçu.",
-          transporteur: "Chronopost",
-        },
+        // ... autres tickets
       ]);
+    } catch (err) {
+      console.error("fetchTickets error:", err);
     } finally {
       setLoading(false);
     }
@@ -52,9 +49,14 @@ export default function Admin() {
   const kpiEnCours = tickets.filter(t => t.statut === "En cours").length;
   const kpiResolu = tickets.filter(t => t.statut === "Résolu").length;
 
+  function handleLogout() {
+    // Par exemple, supprimer token, rediriger
+    window.location.href = "/login";
+  }
+
   return (
     <div className="flex min-h-screen bg-gray-100">
-      <Sidebar onLogout={() => { window.location.href = "/login"; }} />
+      <Sidebar onLogout={handleLogout} />
 
       <main className="flex-1 p-8">
         <h1 className="text-3xl font-extrabold text-violet-800 mb-6">Admin - Gestion des Tickets</h1>
