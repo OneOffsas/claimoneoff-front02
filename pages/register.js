@@ -1,6 +1,5 @@
-import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { useState } from "react";
 
 const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/";
 
@@ -40,21 +39,23 @@ export default function Register() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-tr from-violet-700 to-blue-500">
-      <div className="bg-white rounded-3xl shadow-2xl p-10 w-full max-w-md flex flex-col items-center animate-fade-in">
-        <Image src="/logo.png" width={80} height={80} alt="Logo ClaimOneOff" />
-        <h2 className="text-2xl font-bold text-violet-800 mb-4 mt-2">Créer un compte</h2>
-        <form onSubmit={handleRegister} className="w-full">
-          <input className="border p-3 mb-4 w-full rounded" placeholder="Société" value={societe} onChange={e => setSociete(e.target.value)} required />
-          <input className="border p-3 mb-4 w-full rounded" placeholder="Nom" value={nom} onChange={e => setNom(e.target.value)} required />
-          <input className="border p-3 mb-4 w-full rounded" placeholder="Prénom" value={prenom} onChange={e => setPrenom(e.target.value)} required />
-          <input className="border p-3 mb-4 w-full rounded" type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
-          <input className="border p-3 mb-4 w-full rounded" type="password" placeholder="Mot de passe" value={password} onChange={e => setPassword(e.target.value)} required />
-          <button className="w-full bg-blue-700 text-white py-2 rounded-xl font-semibold hover:bg-violet-700 transition mb-2">Créer mon compte</button>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-violet-600 to-blue-500">
+      <div className="bg-white rounded-2xl shadow-2xl p-10 w-full max-w-md">
+        <div className="flex justify-center mb-4">
+          <img src="/logo.png" alt="ClaimOneOff" className="w-20 h-20" />
+        </div>
+        <h2 className="text-2xl font-bold text-center text-violet-800 mb-2">Créer un compte</h2>
+        <form onSubmit={handleRegister}>
+          <input className="border p-2 mb-4 w-full rounded" placeholder="Société" value={societe} onChange={e => setSociete(e.target.value)} required />
+          <input className="border p-2 mb-4 w-full rounded" placeholder="Nom" value={nom} onChange={e => setNom(e.target.value)} required />
+          <input className="border p-2 mb-4 w-full rounded" placeholder="Prénom" value={prenom} onChange={e => setPrenom(e.target.value)} required />
+          <input className="border p-2 mb-4 w-full rounded" placeholder="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+          <input className="border p-2 mb-4 w-full rounded" type="password" placeholder="Mot de passe" value={password} onChange={e => setPassword(e.target.value)} required />
+          <button className="w-full bg-violet-600 text-white py-2 rounded hover:bg-violet-800 transition font-semibold mb-2">Créer mon compte</button>
         </form>
         <div className="mt-3 text-sm text-center text-gray-500">{msg}</div>
-        <div className="mt-4 w-full flex flex-col items-center">
-          <Link href="/login" className="text-violet-700 font-semibold hover:underline text-xs">J'ai déjà un compte</Link>
+        <div className="mt-4 text-center">
+          <Link href="/login" className="text-violet-600 hover:underline">Déjà inscrit ? Se connecter</Link>
         </div>
       </div>
     </div>
