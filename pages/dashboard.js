@@ -1,155 +1,93 @@
 // pages/dashboard.js
-import { useState, useEffect } from "react";
-import Layout from "../components/Layout";
-import { Table, Button, Modal, Badge, Spinner } from "react-bootstrap";
-import { getUser } from "../utils/auth";
-import { useRouter } from "next/router";
+import { useEffect, useState } from 'react';
+import Layout from '../components/Layout';
 
-const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/"; // ton endpoint
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTicket, setSelectedTicket] = useState(null);
-  const router = useRouter();
 
+  // Au montage, récupérer user depuis localStorage (ou context/auth)
   useEffect(() => {
-    const u = getUser();
-    if (!u) {
-      router.replace("/login");
-    } else {
-      setUser(u);
-      fetchTickets(u);
+    const stored = localStorage.getItem('user');
+    if (!stored) {
+      window.location.href = '/login';
+      return;
     }
-  }, [router]);
+    const u = JSON.parse(stored);
+    setUser(u);
+    // Récupérer les tickets pour ce user
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'getTickets', email: u.email, role: u.role }),
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success') {
+          setTickets(data.tickets);
+        } else {
+          // gérer erreur
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
-  async function fetchTickets(u) {
-    setLoading(true);
-    try {
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "getTickets", email: u.email, role: u.role }),
-      });
-      const data = await res.json();
-      if (data.status === "success") {
-        setTickets(data.tickets || []);
-      } else {
-        console.error("Erreur fetchTickets:", data);
-      }
-    } catch (err) {
-      console.error("fetchTickets network error:", err);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function getBadgeVariant(statut) {
-    if (!statut) return "secondary";
-    const s = statut.toLowerCase();
-    if (s.includes("résolu") || s.includes("resolu")) return "success";
-    if (s.includes("en cours") || s.includes("encours")) return "primary";
-    if (s.includes("remboursé") || s.includes("rembourse")) return "warning";
-    return "secondary";
-  }
-
+  if (!user) return null;
   return (
-    <Layout>
-      <h1 className="mb-4">Mes Tickets</h1>
+    <Layout user={user}>
+      <h1>Mes Tickets</h1>
       {loading ? (
-        <div className="text-center">
-          <Spinner animation="border" variant="primary" />
-        </div>
+        <p>Chargement...</p>
+      ) : tickets.length === 0 ? (
+        <p>Aucun ticket trouvé.</p>
       ) : (
-        <>
-          <div className="mb-3">
-            <Button variant="success" onClick={() => router.push("/createticket")}>
-              Créer un ticket
-            </Button>
-          </div>
-          {tickets.length === 0 ? (
-            <p>Aucun ticket trouvé.</p>
-          ) : (
-            <Table striped bordered hover responsive>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Date ouverture</th>
-                  <th>Urgence</th>
-                  <th>Sujet</th>
-                  <th>Statut</th>
-                  <th>Action</th>
+        <div className="table-responsive">
+          <table className="table table-striped">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Date</th>
+                <th>Problème</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tickets.map(t => (
+                <tr key={t.id_ticket}>
+                  <td>{t.id_ticket}</td>
+                  <td>{t.date_ouverture}</td>
+                  <td>{t.problematique}</td>
+                  <td>{t.statut}</td>
+                  <td>
+                    <button
+                      className="btn btn-sm btn-outline-primary"
+                      onClick={() => {
+                        // afficher détails ou rediriger vers page de détail
+                        window.location.href = `/tickets/${t.id_ticket}`;
+                      }}
+                    >
+                      Voir
+                    </button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {tickets.map(ticket => (
-                  <tr key={ticket.id_ticket}>
-                    <td className="font-monospace">{ticket.id_ticket}</td>
-                    <td>{ticket.date_ouverture}</td>
-                    <td>{ticket.urgence}</td>
-                    <td>{ticket.problematique}</td>
-                    <td>
-                      <Badge bg={getBadgeVariant(ticket.statut)}>{ticket.statut}</Badge>
-                    </td>
-                    <td>
-                      <Button size="sm" onClick={() => setSelectedTicket(ticket)}>
-                        Voir
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          )}
-        </>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
-
-      {selectedTicket && (
-        <Modal show onHide={() => setSelectedTicket(null)} size="lg">
-          <Modal.Header closeButton>
-            <Modal.Title>Ticket {selectedTicket.id_ticket}</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <p><strong>Utilisateur :</strong> {selectedTicket.utilisateur}</p>
-            <p><strong>Email :</strong> {selectedTicket.email}</p>
-            <p><strong>Date ouverture :</strong> {selectedTicket.date_ouverture}</p>
-            <p><strong>Urgence :</strong> {selectedTicket.urgence}</p>
-            <p><strong>Numéro commande :</strong> {selectedTicket.numero_commande}</p>
-            <p><strong>SLA cible :</strong> {selectedTicket.sla_cible}</p>
-            <p><strong>Problématique :</strong> {selectedTicket.problematique}</p>
-            <p><strong>Transporteur :</strong> {selectedTicket.transporteur}</p>
-            <p><strong>Description :</strong> {selectedTicket.description}</p>
-            {selectedTicket.fichiers_joints && (
-              <p>
-                <strong>Fichier joint :</strong>{" "}
-                <a href={selectedTicket.fichiers_joints} target="_blank" rel="noopener noreferrer">
-                  Voir le fichier
-                </a>
-              </p>
-            )}
-            <p><strong>Statut :</strong> {selectedTicket.statut}</p>
-            <p><strong>Date MAJ :</strong> {selectedTicket.date_maj}</p>
-            <p><strong>Priorité :</strong> {selectedTicket.priorite}</p>
-            <p><strong>Type action :</strong> {selectedTicket.type_action}</p>
-            <p><strong>Délai résolution :</strong> {selectedTicket.delai_resolution}</p>
-            <p><strong>Facturation :</strong> {selectedTicket.facturation}</p>
-            {selectedTicket.discussion && (
-              <div className="mt-3">
-                <h5>Discussion</h5>
-                <pre style={{ whiteSpace: "pre-wrap", background: "#f8f9fa", padding: "10px" }}>
-                  {selectedTicket.discussion}
-                </pre>
-              </div>
-            )}
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={() => setSelectedTicket(null)}>
-              Fermer
-            </Button>
-          </Modal.Footer>
-        </Modal>
-      )}
+      <div className="mt-4">
+        <button
+          className="btn btn-primary-custom"
+          onClick={() => window.location.href = '/createticket'}
+        >
+          Créer un nouveau ticket
+        </button>
+      </div>
     </Layout>
   );
 }
