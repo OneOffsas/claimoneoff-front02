@@ -1,11 +1,10 @@
 // pages/register.js
 import { useState } from "react";
-import Layout from "@/components/Layout";
+import Layout from "../components/Layout";
 import { Form, Button, Alert, Card } from "react-bootstrap";
 import { useRouter } from "next/router";
-import { saveUser } from "@/utils/auth";
 
-const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/"; // Remplace par ton endpoint
+const API_URL = "https://yellow-violet-1ba5.oneoffsas.workers.dev/"; // ton endpoint
 
 export default function Register() {
   const [societe, setSociete] = useState("");
@@ -37,7 +36,6 @@ export default function Register() {
       const data = await res.json();
       if (data.status === "success") {
         setMsg({ text: "Compte créé ! Vous pouvez vous connecter.", variant: "success" });
-        // Option: auto-login et redirect vers dashboard ? On peut simplement rediriger après quelques secondes
         setTimeout(() => {
           router.push("/login");
         }, 1500);
