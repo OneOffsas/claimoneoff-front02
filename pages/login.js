@@ -1,50 +1,63 @@
 // pages/login.js
-import { useState } from "react"
-import { useRouter } from "next/router"
-import Link from "next/link"                 // ← ajouté
-import { apiCall } from "../utils/api"
+import { useState } from 'react';
+import { useRouter } from 'next/router';
+import Navbar from '../components/Navbar';
+import { login } from '../services/api';
 
-export default function Login() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [msg, setMsg] = useState("")
-  const router = useRouter()
+export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
-  async function handleSubmit(e) {
-    e.preventDefault()
-    setMsg("Connexion…")
-    const data = await apiCall("login", { email, password })
-    if (data.status === "success") {
-      router.push("/dashboard")
+  const submit = async e => {
+    e.preventDefault();
+    const res = await login(email, password);
+    if (res.status === 'error' || res.error) {
+      setError(res.message || res.error || 'Erreur de connexion');
     } else {
-      setMsg(data.message)
+      router.push('/tickets');
     }
-  }
+  };
 
   return (
-    <div className="d-flex justify-content-center align-items-center vh-100 bg-gradient">
-      <div className="card p-4 shadow" style={{ width: 360 }}>
-        <h2 className="mb-4 text-center">Se connecter</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-3">
-            <label className="form-label">Email</label>
-            <input type="email" className="form-control"
-              value={email} onChange={e => setEmail(e.target.value)} required/>
+    <>
+      <Navbar />
+      <div className="container d-flex justify-content-center">
+        <div className="card w-50">
+          <div className="card-body">
+            <h3 className="card-title mb-4 text-center">Connexion</h3>
+            {error && <div className="alert alert-danger">{error}</div>}
+            <form onSubmit={submit}>
+              <div className="mb-3">
+                <label className="form-label">Email</label>
+                <input
+                  type="email"
+                  className="form-control"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="mb-3">
+                <label className="form-label">Mot de passe</label>
+                <input
+                  type="password"
+                  className="form-control"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <button className="btn btn-primary w-100" type="submit">
+                Se connecter
+              </button>
+            </form>
           </div>
-          <div className="mb-3">
-            <label className="form-label">Mot de passe</label>
-            <input type="password" className="form-control"
-              value={password} onChange={e => setPassword(e.target.value)} required/>
-          </div>
-          <button className="btn btn-primary w-100">Connexion</button>
-        </form>
-        {msg && <div className="alert alert-warning mt-3">{msg}</div>}
-        <div className="text-center mt-3">
-          <Link href="/register"><a>Créer un compte</a></Link> •
-          <Link href="/forgot"><a>Mot de passe oublié</a></Link>
         </div>
       </div>
-    </div>
-  )
+    </>
+  );
 }
+
 
