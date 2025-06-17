@@ -1,51 +1,106 @@
-import Link from "next/link";
-import { useState } from "react";
+// pages/tickets.js
+import { useEffect, useState } from 'react';
+import Navbar from '../components/Navbar';
+import { fetchTickets, createTicket } from '../services/api';
 
-export default function Tickets() {
-  const [tickets, setTickets] = useState([
-    { id: 1, sujet: "Problème livraison", statut: "Ouvert", date: "2025-06-15" },
-    { id: 2, sujet: "Erreur de préparation", statut: "En cours", date: "2025-06-14" },
-  ]);
+export default function TicketsPage() {
+  const [tickets, setTickets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [newT, setNewT] = useState({
+    urgence:'Normale', numero_commande:'', sla_cible:'', problematique:'', transporteur:'', description:''
+  });
+
+  const user = {
+    societe: 'MaBoutique',
+    utilisateur: 'dupont',
+    email: 'j.dupont@ex.com',
+    role: 'Client'
+  };
+
+  const load = async () => {
+    setLoading(true);
+    const res = await fetchTickets(user);
+    if (res.status==='success') setTickets(res.tickets);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const submit = async e => {
+    e.preventDefault();
+    await createTicket({ ...user, ...newT });
+    setShowForm(false);
+    setNewT({ urgence:'Normale', numero_commande:'', sla_cible:'', problematique:'', transporteur:'', description:'' });
+    load();
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-blue-500 to-violet-600 p-10">
-      <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-xl p-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-violet-700">Mes tickets</h1>
-          <Link href="/createticket" className="bg-violet-600 text-white px-4 py-2 rounded shadow hover:bg-violet-800">Créer un ticket</Link>
+    <>
+      <Navbar />
+      <div className="container">
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h2>Mes Tickets</h2>
+          <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
+            {showForm ? 'Annuler' : 'Nouveau Ticket'}
+          </button>
         </div>
-        <table className="w-full text-left border-separate border-spacing-y-2">
-          <thead>
-            <tr className="text-violet-700">
-              <th>ID</th>
-              <th>Sujet</th>
-              <th>Statut</th>
-              <th>Date</th>
-              <th>Détail</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tickets.map((t) => (
-              <tr key={t.id} className="hover:bg-violet-50 transition rounded-lg">
-                <td>{t.id}</td>
-                <td>{t.sujet}</td>
-                <td>
-                  <span className={
-                    t.statut === "Ouvert"
-                      ? "bg-green-100 text-green-700 px-2 py-1 rounded"
-                      : "bg-yellow-100 text-yellow-700 px-2 py-1 rounded"
-                  }>{t.statut}</span>
-                </td>
-                <td>{t.date}</td>
-                <td>
-                  <Link href={`/tickets/${t.id}`} className="text-violet-700 underline hover:text-violet-900">Voir</Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {showForm && (
+          <div className="card mb-4">
+            <div className="card-body">
+              <h5 className="card-title">Créer un ticket</h5>
+              <form onSubmit={submit}>
+                {Object.entries(newT).map(([key,val]) => (
+                  <div className="mb-3" key={key}>
+                    <label className="form-label">
+                      {key.replace('_',' ').replace(/\b\w/g,l=>l.toUpperCase())}
+                    </label>
+                    {key==='description' 
+                      ? <textarea
+                          className="form-control"
+                          value={val}
+                          onChange={e=>setNewT({...newT,[key]:e.target.value})}
+                          required
+                        />
+                      : <input
+                          type="text"
+                          className="form-control"
+                          value={val}
+                          onChange={e=>setNewT({...newT,[key]:e.target.value})}
+                          required
+                        />
+                    }
+                  </div>
+                ))}
+                <button className="btn btn-success" type="submit">Envoyer</button>
+              </form>
+            </div>
+          </div>
+        )}
+        {loading 
+          ? <div className="text-center">Chargement…</div>
+          : (
+            <table className="table table-hover">
+              <thead className="table-light">
+                <tr>
+                  <th>#</th><th>Problématique</th><th>Statut</th><th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tickets.map(t => (
+                  <tr key={t.ID_Ticket}>
+                    <td>{t.ID_Ticket}</td>
+                    <td>{t.Problematique}</td>
+                    <td>{t.Statut}</td>
+                    <td>{new Date(t.Date_Ouverture).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )
+        }
       </div>
-    </div>
+    </>
   );
 }
 
