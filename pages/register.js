@@ -1,50 +1,60 @@
 // pages/register.js
-import { useState } from "react"
-import { useRouter } from "next/router"
-import { apiCall } from "../utils/api"
-import Link from "next/link"
+import { useState } from 'react';
+import { useRouter } from 'next/router';
+import Navbar from '../components/Navbar';
+import { register } from '../services/api';
 
-export default function Register() {
-  const [form, setForm] = useState({ societe:"", nom:"", prenom:"", email:"", password:"" })
-  const [msg, setMsg] = useState("")
-  const router = useRouter()
+export default function RegisterPage() {
+  const router = useRouter();
+  const [form, setForm] = useState({ email:'', password:'', nom:'', prenom:'', societe:'' });
+  const [error, setError] = useState('');
 
-  async function submit(e) {
-    e.preventDefault()
-    setMsg("Inscription…")
-    const data = await apiCall("register", form)
-    if (data.status==="success") {
-      setMsg("Compte créé ! Redirection…")
-      setTimeout(()=>router.push("/login"),1000)
+  const handleChange = e => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const submit = async e => {
+    e.preventDefault();
+    const res = await register(form);
+    if (res.status === 'error' || res.error) {
+      setError(res.message || res.error || 'Erreur inscription');
     } else {
-      setMsg(data.message)
+      router.push('/login');
     }
-  }
+  };
 
   return (
-    <div className="d-flex justify-content-center align-items-center vh-100 bg-gradient">
-      <div className="card p-4 shadow w-100" style={{maxWidth: 400}}>
-        <h2 className="mb-4 text-center">Créer un compte</h2>
-        <form onSubmit={submit}>
-          {["societe","nom","prenom","email","password"].map((k,i)=>(
-            <div key={k} className="mb-3">
-              <label className="form-label">{k.charAt(0).toUpperCase()+k.slice(1)}</label>
-              <input
-                type={k==="email"?"email":k==="password"?"password":"text"}
-                className="form-control"
-                value={form[k]}
-                onChange={e=>setForm({...form,[k]:e.target.value})}
-                required
-              />
-            </div>
-          ))}
-          <button className="btn btn-success w-100">Créer mon compte</button>
-        </form>
-        {msg && <div className="alert alert-info mt-3">{msg}</div>}
-        <p className="text-center mt-2">
-          <Link href="/login"><a>Déjà inscrit ?</a></Link>
-        </p>
+    <>
+      <Navbar />
+      <div className="container d-flex justify-content-center">
+        <div className="card w-50">
+          <div className="card-body">
+            <h3 className="card-title mb-4 text-center">Inscription</h3>
+            {error && <div className="alert alert-danger">{error}</div>}
+            <form onSubmit={submit}>
+              {['nom','prenom','societe','email','password'].map(field => (
+                <div className="mb-3" key={field}>
+                  <label className="form-label">
+                    {field.charAt(0).toUpperCase()+field.slice(1)}
+                  </label>
+                  <input
+                    type={field==='password'?'password':'text'}
+                    name={field}
+                    className="form-control"
+                    value={form[field]}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+              ))}
+              <button className="btn btn-success w-100" type="submit">
+                S’inscrire
+              </button>
+            </form>
+          </div>
+        </div>
       </div>
-    </div>
-  )
+    </>
+  );
 }
+
