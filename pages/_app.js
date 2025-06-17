@@ -1,14 +1,9 @@
 // pages/_app.js
-import "bootstrap/dist/css/bootstrap.min.css"
-import "bootstrap-icons/font/bootstrap-icons.css"
-import "../styles/globals.css"
-import Layout from "../components/Layout"
+import 'bootstrap/dist/css/bootstrap.min.css';
+import '../styles/globals.css'; // ou retire si tu n'as pas ce fichier
 
-export default function App({ Component, pageProps }) {
-  // pageProps.user doit venir de votre authentif si vous enregistrez user  
-  return (
-    <Layout user={pageProps.user}>
-      <Component {...pageProps}/>
-    </Layout>
-  )
+function MyApp({ Component, pageProps }) {
+  return <Component {...pageProps} />;
 }
+
+export default MyApp;
