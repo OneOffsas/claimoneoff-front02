@@ -108,5 +108,11 @@ export default function TicketsPage() {
                   </tr>
                 ))}
               </tbody>
-
+            </table>
+          )
+        }
+      </div>
+    </>
+  );
+}
 
