@@ -2,38 +2,48 @@
 import { useEffect, useState } from 'react';
 import Navbar from '../components/Navbar';
 import { fetchTickets, createTicket } from '../services/api';
+import { useRouter } from 'next/router';
 
 export default function TicketsPage() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [user, setUser] = useState(null);
   const [newT, setNewT] = useState({
     urgence:'Normale', numero_commande:'', sla_cible:'', problematique:'', transporteur:'', description:''
   });
+  const router = useRouter();
 
-  const user = {
-    societe: 'MaBoutique',
-    utilisateur: 'dupont',
-    email: 'j.dupont@ex.com',
-    role: 'Client'
-  };
+  // Charger l'utilisateur connecté
+  useEffect(() => {
+    const u = JSON.parse(localStorage.getItem('claimoneoff_user'));
+    if (!u) {
+      router.push('/login');
+      return;
+    }
+    setUser(u);
 
-  const load = async () => {
-    setLoading(true);
-    const res = await fetchTickets(user);
-    if (res.status==='success') setTickets(res.tickets);
-    setLoading(false);
-  };
-
-  useEffect(() => { load(); }, []);
+    const load = async () => {
+      setLoading(true);
+      const res = await fetchTickets({ societe: u.societe, role: u.role, email: u.email });
+      if (res.status==='success') setTickets(res.tickets);
+      setLoading(false);
+    };
+    load();
+  }, []);
 
   const submit = async e => {
     e.preventDefault();
+    if (!user) return;
     await createTicket({ ...user, ...newT });
     setShowForm(false);
     setNewT({ urgence:'Normale', numero_commande:'', sla_cible:'', problematique:'', transporteur:'', description:'' });
-    load();
+    // Recharger les tickets après création
+    const res = await fetchTickets({ societe: user.societe, role: user.role, email: user.email });
+    if (res.status==='success') setTickets(res.tickets);
   };
+
+  if (!user) return null; // Afficher rien le temps du redirect
 
   return (
     <>
@@ -45,6 +55,7 @@ export default function TicketsPage() {
             {showForm ? 'Annuler' : 'Nouveau Ticket'}
           </button>
         </div>
+
         {showForm && (
           <div className="card mb-4">
             <div className="card-body">
@@ -77,6 +88,7 @@ export default function TicketsPage() {
             </div>
           </div>
         )}
+
         {loading 
           ? <div className="text-center">Chargement…</div>
           : (
@@ -96,11 +108,5 @@ export default function TicketsPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
-          )
-        }
-      </div>
-    </>
-  );
-}
+
 
