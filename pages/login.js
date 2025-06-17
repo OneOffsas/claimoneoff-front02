@@ -16,6 +16,8 @@ export default function LoginPage() {
     if (res.status === 'error' || res.error) {
       setError(res.message || res.error || 'Erreur de connexion');
     } else {
+      // On stocke l'utilisateur dans localStorage
+      localStorage.setItem('claimoneoff_user', JSON.stringify(res));
       router.push('/tickets');
     }
   };
