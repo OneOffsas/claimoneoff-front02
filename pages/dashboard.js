@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { getSession } from 'next-auth/react';
-import { GoogleSpreadsheet } from 'google-spreadsheet';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import styles from '../styles/Dashboard.module.css';
 
