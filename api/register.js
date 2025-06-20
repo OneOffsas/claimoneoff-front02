@@ -7,18 +7,20 @@ export default async function handler(req, res) {
     const { email, password, nom, prenom, societe } = req.body;
     const passwordHash = sha256(password);
 
-    // URL Apps Script directe !
     const scriptUrl = process.env.CLOUDFLARE_WORKER_URL || "https://script.google.com/macros/s/AKfycbxVsHNzAtfR55M3t7A-vk7RAZz2EO6fqzxKmlUACnNWnauWuQAt3ecSuPiNSDvoCI5-lw/exec";
 
     let resp;
     try {
       resp = await fetch(scriptUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({
-          action: 'register',    // INDISPENSABLE !
+          action: 'register',
           email,
-          passwordHash,          // Indispensable (pas juste "password" !)
+          passwordHash,
           nom,
           prenom,
           societe
