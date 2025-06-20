@@ -7,25 +7,29 @@ export default async function handler(req, res) {
     const { email, password, nom, prenom, societe } = req.body;
     const passwordHash = sha256(password);
 
-    // Récupère l'URL Worker de l'env, fallback possible si tu veux tester en local
     const workerUrl = process.env.CLOUDFLARE_WORKER_URL || "https://yellow-violet-1ba5.workers.dev";
 
+    // ENVOIE la requête et loggue tout
     const resp = await fetch(`${workerUrl}?action=register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password: passwordHash, nom, prenom, societe }),
     });
 
+    const raw = await resp.text();
+    console.log('=== Réponse Worker brute ===');
+    console.log(raw);
+
     let data;
     try {
-      data = await resp.json();
+      data = JSON.parse(raw);
     } catch (e) {
-      const text = await resp.text();
-      console.error('Réponse non JSON du worker:', text);
-      return res.status(500).json({ error: text });
+      console.error('Réponse NON JSON reçue du Worker :', raw);
+      return res.status(500).json({ error: `Réponse Worker non JSON : ${raw}` });
     }
 
     if (data.status === 'error') {
+      console.error('Erreur Worker status:', data.message);
       return res.status(400).json({ error: data.message });
     }
 
@@ -36,3 +40,4 @@ export default async function handler(req, res) {
     res.status(500).json({ error: err.message || 'Internal Server Error' });
   }
 }
+
