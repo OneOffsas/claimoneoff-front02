@@ -9,29 +9,35 @@ export default async function handler(req, res) {
 
     const workerUrl = process.env.CLOUDFLARE_WORKER_URL || "https://yellow-violet-1ba5.workers.dev";
 
+    // Envoie la requête
     const resp = await fetch(`${workerUrl}?action=login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password: passwordHash }),
     });
 
+    // Récupère la réponse brute (texte)
+    const raw = await resp.text();
+
+    // Tente de parser le JSON
     let data;
     try {
-      data = await resp.json();
+      data = JSON.parse(raw);
     } catch (e) {
-      const text = await resp.text();
-      console.error('Réponse non JSON du worker:', text);
-      return res.status(500).json({ error: text });
+      // Si ce n'est pas du JSON, affiche le texte reçu
+      return res.status(500).json({ error: `Réponse non JSON du Worker: ${raw}` });
     }
 
     if (data.status === 'error') {
-      return res.status(401).json({ error: data.message });
+      // Affiche l'erreur du worker directement côté front
+      return res.status(400).json({ error: data.message });
     }
 
     res.status(200).json(data);
 
   } catch (err) {
-    console.error('Erreur API /login:', err);
-    res.status(500).json({ error: err.message || 'Internal Server Error' });
+    // Si tout plante, affiche l'erreur du serveur
+    return res.status(500).json({ error: err.message || 'Erreur serveur inconnue' });
   }
 }
+
