@@ -13,11 +13,14 @@ export default async function handler(req, res) {
     try {
       resp = await fetch(scriptUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({
-          action: 'login',     // INDISPENSABLE !
+          action: 'login',
           email,
-          passwordHash         // Indispensable (pas juste "password" !)
+          passwordHash
         }),
       });
     } catch (e) {
@@ -42,4 +45,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message || 'Erreur serveur inconnue' });
   }
 }
-
