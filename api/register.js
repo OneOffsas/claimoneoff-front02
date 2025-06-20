@@ -7,24 +7,25 @@ export default async function handler(req, res) {
     const { email, password, nom, prenom, societe } = req.body;
     const passwordHash = sha256(password);
 
-    const workerUrl = process.env.CLOUDFLARE_WORKER_URL || "https://script.google.com/macros/s/AKfycbxVsHNzAtfR55M3t7A-vk7RAZz2EO6fqzxKmlUACnNWnauWuQAt3ecSuPiNSDvoCI5-lw/exec";
+    // URL Apps Script directe !
+    const scriptUrl = process.env.CLOUDFLARE_WORKER_URL || "https://script.google.com/macros/s/AKfycbxVsHNzAtfR55M3t7A-vk7RAZz2EO6fqzxKmlUACnNWnauWuQAt3ecSuPiNSDvoCI5-lw/exec";
 
     let resp;
     try {
-      resp = await fetch(workerUrl, {
+      resp = await fetch(scriptUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'register',    // <-- ACTION OBLIGATOIRE !
+          action: 'register',    // INDISPENSABLE !
           email,
-          passwordHash,
+          passwordHash,          // Indispensable (pas juste "password" !)
           nom,
           prenom,
           societe
         }),
       });
     } catch (e) {
-      return res.status(500).json({ error: "Connexion au Worker/Script impossible : " + e.message });
+      return res.status(500).json({ error: "Connexion au Script impossible : " + e.message });
     }
 
     const raw = await resp.text();
