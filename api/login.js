@@ -7,28 +7,30 @@ export default async function handler(req, res) {
     const { email, password } = req.body;
     const passwordHash = sha256(password);
 
-    // Utilise la variable d'env et par défaut le bon lien fourni
-    const workerUrl = process.env.CLOUDFLARE_WORKER_URL || "https://yellow-violet-1ba5.oneoffsas.workers.dev";
+    // Utilise la variable d'env (ou l’URL directe)
+    const workerUrl = process.env.CLOUDFLARE_WORKER_URL || "https://script.google.com/macros/s/AKfycbxVsHNzAtfR55M3t7A-vk7RAZz2EO6fqzxKmlUACnNWnauWuQAt3ecSuPiNSDvoCI5-lw/exec";
 
-    // Envoie la requête au Worker
     let resp;
     try {
-      resp = await fetch(`${workerUrl}?action=login`, {
+      resp = await fetch(workerUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: passwordHash }),
+        body: JSON.stringify({
+          action: 'login',       // <-- ACTION OBLIGATOIRE !
+          email,
+          passwordHash
+        }),
       });
     } catch (e) {
-      return res.status(500).json({ error: "Connexion au Worker impossible : " + e.message });
+      return res.status(500).json({ error: "Connexion au Worker/Script impossible : " + e.message });
     }
 
     const raw = await resp.text();
-
     let data;
     try {
       data = JSON.parse(raw);
     } catch (e) {
-      return res.status(500).json({ error: `Réponse non JSON du Worker: ${raw}` });
+      return res.status(500).json({ error: `Réponse non JSON du Script: ${raw}` });
     }
 
     if (data.status === 'error') {
