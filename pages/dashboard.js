@@ -1,4 +1,3 @@
-// /pages/dashboard.js
 import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
 import AdminCockpit from "../components/AdminCockpit";
@@ -19,7 +18,9 @@ export default function DashboardPage() {
 
   return (
     <Layout user={user}>
-      {(page) => user.role === "Admin" ? <AdminCockpit user={user} page={page} /> : <ClientCockpit user={user} page={page} />}
+      {(page) => user.role === "Admin"
+        ? <AdminCockpit user={user} page={page} />
+        : <ClientCockpit user={user} page={page} />}
     </Layout>
   );
 }
