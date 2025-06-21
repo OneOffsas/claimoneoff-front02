@@ -37,7 +37,6 @@ export default function TicketsDashboard({ user }) {
             </div>
           </div>
         </div>
-        {/* D’autres stats, widgets, couleurs ? */}
       </div>
       <div className="card shadow border-0">
         <div className="card-header bg-white" style={{ fontWeight: 700 }}>Historique des Tickets</div>
@@ -83,4 +82,3 @@ export default function TicketsDashboard({ user }) {
     </div>
   );
 }
-
