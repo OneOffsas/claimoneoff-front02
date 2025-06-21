@@ -1,90 +1,38 @@
-// components/Layout.js
-import Link from 'next/link';
-import { useRouter } from 'next/router';
-import {
-  FaTicketAlt,
-  FaChartBar,
-  FaSignOutAlt,
-  FaPlus,
-  FaUserShield
-} from 'react-icons/fa';
+import { FaTachometerAlt, FaTicketAlt, FaChartBar, FaSignOutAlt, FaUser } from "react-icons/fa";
 
-export default function Layout({ children, user }) {
-  const router = useRouter();
-
-  if (!user) return <>{children}</>;
-
-  const isActive = (path) => router.pathname === path;
-
-  const menuItemsClient = [
-    {
-      label: 'Mes tickets',
-      href: '/dashboard',
-      icon: <FaTicketAlt />,
-    },
-    {
-      label: 'Nouveau ticket',
-      href: '/createticket',
-      icon: <FaPlus />,
-    },
-    {
-      label: 'Se déconnecter',
-      href: '/logout',
-      icon: <FaSignOutAlt />,
-    },
+export default function Layout({ user, page, setPage, children }) {
+  // user.role = "Admin" ou "Client"
+  const menu = [
+    { key: "dashboard", label: "Cockpit", icon: <FaTachometerAlt /> },
+    { key: "tickets", label: "Mes Tickets", icon: <FaTicketAlt /> },
+    { key: "stats", label: "Statistiques", icon: <FaChartBar /> },
+    { key: "profile", label: "Mon Profil", icon: <FaUser /> },
+    { key: "logout", label: "Déconnexion", icon: <FaSignOutAlt /> }
   ];
-
-  const menuItemsAdmin = [
-    {
-      label: 'Dashboard Admin',
-      href: '/admin',
-      icon: <FaChartBar />,
-    },
-    {
-      label: 'Mes tickets',
-      href: '/dashboard',
-      icon: <FaTicketAlt />,
-    },
-    {
-      label: 'Nouveau ticket',
-      href: '/createticket',
-      icon: <FaPlus />,
-    },
-    {
-      label: 'Se déconnecter',
-      href: '/logout',
-      icon: <FaSignOutAlt />,
-    },
-  ];
-
-  const menu = user.role === 'Admin' ? menuItemsAdmin : menuItemsClient;
+  if (user.role === "Admin") menu.splice(2, 0, { key: "admin", label: "Vue Admin", icon: <FaUser /> });
 
   return (
-    <div className="d-flex min-vh-100">
-      {/* Sidebar */}
-      <aside className="bg-dark text-white p-3" style={{ width: '250px' }}>
-        <div className="text-center mb-4">
-          <img src="/logo.png" alt="Logo" style={{ maxWidth: '100px' }} />
+    <div className="d-flex" style={{ minHeight: "100vh", background: "#f4f7fb" }}>
+      <aside className="bg-white shadow-sm px-0" style={{ width: 220, minHeight: "100vh" }}>
+        <div className="text-center py-4 border-bottom" style={{ fontWeight: 900, fontSize: 28, color: "#6441a5", letterSpacing: 1 }}>
+          <span style={{ color: "#2b43c7" }}>Claim</span>OneOff
         </div>
-        <nav>
-          {menu.map((item, idx) => (
-            <Link key={idx} href={item.href} passHref legacyBehavior>
-              <a
-                className={`d-flex align-items-center mb-3 text-white text-decoration-none p-2 rounded ${
-                  isActive(item.href) ? 'bg-primary' : 'bg-dark'
-                }`}
-                style={{ transition: '0.3s' }}
-              >
-                <span style={{ marginRight: '10px' }}>{item.icon}</span>
-                {item.label}
-              </a>
-            </Link>
+        <nav className="nav flex-column mt-4">
+          {menu.map(m => (
+            <button
+              key={m.key}
+              className={`nav-link text-start py-3 px-4 ${page === m.key ? "active" : ""}`}
+              style={{ fontWeight: 600, fontSize: 18, color: "#444", background: "none", border: "none", outline: "none" }}
+              onClick={() => m.key === "logout" ? window.location.href="/login" : setPage(m.key)}
+            >
+              <span className="me-2">{m.icon}</span> {m.label}
+            </button>
           ))}
         </nav>
       </aside>
-
-      {/* Main content */}
-      <main className="flex-grow-1 bg-light p-4">{children}</main>
+      <main className="flex-grow-1 px-4 py-3">
+        {children}
+      </main>
     </div>
   );
 }
