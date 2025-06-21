@@ -3,8 +3,10 @@ import { sha256 } from 'js-sha256';
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end('Method Not Allowed');
   const { email, password, nom, prenom, societe } = req.body;
-  // On hash le mot de passe AVANT d'envoyer à Apps Script
   const passwordHash = sha256(password);
+
+  // LOG pour debug
+  console.log("BODY REGISTER ENVOYÉ", { action: "register", email, passwordHash, nom, prenom, societe });
 
   const scriptUrl = process.env.CLAIMONEOFF_API_URL || "https://script.google.com/macros/s/AKfycbxVsHNzAtfR55M3t7A-vk7RAZz2EO6fqzxKmlUACnNWnauWuQAt3ecSuPiNSDvoCI5-lw/exec";
 
@@ -17,7 +19,7 @@ export default async function handler(req, res) {
     body: JSON.stringify({
       action: 'register',
       email,
-      passwordHash, // CLE GARANTIE
+      passwordHash, // C’EST BIEN CETTE CLÉ QUI SERA ENREGISTRÉE DANS LA FEUILLE
       nom,
       prenom,
       societe
