@@ -1,14 +1,2 @@
-/* styles/globals.css */
-
-/* simple gradient background */
-.bg-gradient {
-  background: linear-gradient(135deg, #6f42c1 0%, #0d6efd 100%);
-}
-
-/* Sidebar links */
-.nav-link.active { background-color: #e9ecef; border-radius: 4px; }
-
-/* main container */
-.main-container { padding: 1rem; }
-
-body { font-family: "Segoe UI", sans-serif; }
+/* styles/global.css */
+body { background: #f8f9fa; }
