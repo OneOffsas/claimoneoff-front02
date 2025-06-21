@@ -6,7 +6,14 @@ export default async function handler(req, res) {
   const passwordHash = sha256(password);
 
   // LOG pour debug
-  console.log("BODY REGISTER ENVOYÉ", { action: "register", email, passwordHash, nom, prenom, societe });
+  console.log("DEBUG REGISTER → body envoyé : ", {
+    action: 'register',
+    email,
+    passwordHash,
+    nom,
+    prenom,
+    societe
+  });
 
   const scriptUrl = process.env.CLAIMONEOFF_API_URL || "https://script.google.com/macros/s/AKfycbxVsHNzAtfR55M3t7A-vk7RAZz2EO6fqzxKmlUACnNWnauWuQAt3ecSuPiNSDvoCI5-lw/exec";
 
@@ -19,7 +26,7 @@ export default async function handler(req, res) {
     body: JSON.stringify({
       action: 'register',
       email,
-      passwordHash, // C’EST BIEN CETTE CLÉ QUI SERA ENREGISTRÉE DANS LA FEUILLE
+      passwordHash,
       nom,
       prenom,
       societe
@@ -38,4 +45,3 @@ export default async function handler(req, res) {
 
   res.status(200).json(data);
 }
-
