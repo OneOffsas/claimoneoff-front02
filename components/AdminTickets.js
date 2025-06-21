@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { CSVLink } from "react-csv";
+import { Badge } from "react-bootstrap";
 
 export default function AdminTickets({ user }) {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState({ statut: "", societe: "", problematique: "" });
 
   const loadTickets = async () => {
     setLoading(true);
@@ -23,55 +23,24 @@ export default function AdminTickets({ user }) {
 
   useEffect(() => { loadTickets(); }, []);
 
-  const filtred = tickets.filter(t =>
-    (!filter.statut || t.Statut === filter.statut) &&
-    (!filter.societe || t.Societe === filter.societe) &&
-    (!filter.problematique || t.Problematique === filter.problematique)
-  );
-
-  const allSocietes = [...new Set(tickets.map(t => t.Societe))].filter(Boolean);
-  const allProblemes = [...new Set(tickets.map(t => t.Problematique))].filter(Boolean);
-  const allStatuts = [...new Set(tickets.map(t => t.Statut))].filter(Boolean);
-
   return (
-    <div>
-      <h3>Tickets – Vue Admin</h3>
-      <div className="row g-3 mb-3">
-        <div className="col">
-          <select className="form-select" value={filter.statut} onChange={e => setFilter(f => ({ ...f, statut: e.target.value }))}>
-            <option value="">Tous statuts</option>
-            {allStatuts.map(st => <option key={st}>{st}</option>)}
-          </select>
-        </div>
-        <div className="col">
-          <select className="form-select" value={filter.societe} onChange={e => setFilter(f => ({ ...f, societe: e.target.value }))}>
-            <option value="">Toutes sociétés</option>
-            {allSocietes.map(soc => <option key={soc}>{soc}</option>)}
-          </select>
-        </div>
-        <div className="col">
-          <select className="form-select" value={filter.problematique} onChange={e => setFilter(f => ({ ...f, problematique: e.target.value }))}>
-            <option value="">Tous problèmes</option>
-            {allProblemes.map(pb => <option key={pb}>{pb}</option>)}
-          </select>
-        </div>
-        <div className="col-auto d-flex align-items-center">
-          <CSVLink
-            data={filtred}
-            filename={"claimoneoff-tickets.csv"}
-            className="btn btn-outline-success btn-sm"
-          >
-            Export CSV
-          </CSVLink>
-          <button className="btn btn-outline-secondary btn-sm ms-2" onClick={loadTickets}>Rafraîchir</button>
-        </div>
+    <div className="container-fluid">
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h2 className="mb-0" style={{ fontWeight: 800, color: "#2b43c7" }}>Vue Globale des Tickets</h2>
+        <CSVLink
+          data={tickets}
+          filename={"claimoneoff-tickets.csv"}
+          className="btn btn-outline-success btn-sm"
+        >
+          Export CSV
+        </CSVLink>
+        <button className="btn btn-outline-secondary btn-sm ms-2" onClick={loadTickets}>Rafraîchir</button>
       </div>
-      <div className="table-responsive">
-        {loading ? (
-          <div>Chargement…</div>
-        ) : (
-          <table className="table table-striped table-hover">
-            <thead>
+      <div className="card shadow border-0">
+        <div className="card-header bg-white" style={{ fontWeight: 700 }}>Tous les Tickets</div>
+        <div className="table-responsive">
+          <table className="table table-striped align-middle">
+            <thead className="table-light">
               <tr>
                 <th>Société</th>
                 <th>Utilisateur</th>
@@ -85,14 +54,12 @@ export default function AdminTickets({ user }) {
               </tr>
             </thead>
             <tbody>
-              {filtred.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="text-center text-muted">
-                    Aucun ticket pour le moment.
-                  </td>
-                </tr>
+              {loading ? (
+                <tr><td colSpan={9} className="text-center">Chargement…</td></tr>
+              ) : tickets.length === 0 ? (
+                <tr><td colSpan={9} className="text-center text-muted">Aucun ticket pour le moment.</td></tr>
               ) : (
-                filtred.map((t, i) => (
+                tickets.map((t, i) => (
                   <tr key={t.ID_Ticket || i}>
                     <td>{t.Societe}</td>
                     <td>{t.Utilisateur}</td>
@@ -101,14 +68,18 @@ export default function AdminTickets({ user }) {
                     <td>{t.Problematique}</td>
                     <td>{t.Transporteur}</td>
                     <td>{t.Urgence}</td>
-                    <td>{t.Statut}</td>
-                    <td style={{ maxWidth: 200 }}>{t.Description}</td>
+                    <td>
+                      <Badge bg={t.Statut === "Ouvert" ? "primary" : t.Statut === "Résolu" ? "success" : "warning"}>
+                        {t.Statut}
+                      </Badge>
+                    </td>
+                    <td style={{ maxWidth: 220 }}>{t.Description}</td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
-        )}
+        </div>
       </div>
     </div>
   );
