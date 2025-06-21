@@ -1,4 +1,3 @@
-// /components/UsersAdmin.js
 export default function UsersAdmin() {
   return (
     <div className="card shadow border-0 p-4">
