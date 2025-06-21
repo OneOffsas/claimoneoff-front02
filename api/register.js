@@ -3,6 +3,10 @@ import { sha256 } from 'js-sha256';
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end('Method Not Allowed');
   const { email, password, nom, prenom, societe } = req.body;
+  // Si un champ manque, on arrête tout de suite
+  if (!email || !password || !nom || !prenom || !societe) {
+    return res.status(400).json({ error: "Champs requis manquants (email, mot de passe, nom, prénom, société)" });
+  }
   const passwordHash = sha256(password);
 
   const scriptUrl = "https://script.google.com/macros/s/AKfycbxVsHNzAtfR55M3t7A-vk7RAZz2EO6fqzxKmlUACnNWnauWuQAt3ecSuPiNSDvoCI5-lw/exec";
