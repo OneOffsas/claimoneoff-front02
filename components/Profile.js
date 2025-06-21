@@ -1,15 +1,23 @@
+// /components/Profile.js
 export default function Profile({ user }) {
-  if (!user) return <div>Chargement…</div>;
   return (
-    <div className="container my-4">
-      <h3>Mon profil</h3>
-      <ul className="list-group">
-        <li className="list-group-item"><b>Nom :</b> {user.nom}</li>
-        <li className="list-group-item"><b>Prénom :</b> {user.prenom}</li>
-        <li className="list-group-item"><b>Email :</b> {user.email}</li>
-        <li className="list-group-item"><b>Société :</b> {user.societe}</li>
-        <li className="list-group-item"><b>Rôle :</b> {user.role}</li>
-      </ul>
+    <div className="card shadow border-0 p-4">
+      <h3>Mon Profil</h3>
+      <p><b>Nom :</b> {user.nom}</p>
+      <p><b>Prénom :</b> {user.prenom}</p>
+      <p><b>Email :</b> {user.email}</p>
+      <p><b>Société :</b> {user.societe}</p>
+      <p><b>Rôle :</b> {user.role}</p>
+    </div>
+  );
+}
+
+// /components/UsersAdmin.js
+export default function UsersAdmin() {
+  return (
+    <div className="card shadow border-0 p-4">
+      <h3>Gestion des utilisateurs</h3>
+      <p>Module à venir…</p>
     </div>
   );
 }
