@@ -2,13 +2,19 @@ import { sha256 } from 'js-sha256';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end('Method Not Allowed');
-  const { email, password, nom, prenom, societe } = req.body;
+  // Sécurise les champs du front :
+  const email   = req.body.email   ? req.body.email.trim()   : "";
+  const password = req.body.password ? req.body.password : "";
+  const nom     = req.body.nom     ? req.body.nom.trim()     : "";
+  const prenom  = req.body.prenom  ? req.body.prenom.trim()  : "";
+  const societe = req.body.societe ? req.body.societe.trim() : "";
 
-  // LOG pour te montrer ce qui part vraiment
-  console.log("PAYLOAD ENVOYÉ À APPS SCRIPT :", { email, password, nom, prenom, societe });
+  // LOG (important !)
+  console.log("REGISTER PAYLOAD FRONT →", {email, password, nom, prenom, societe});
 
+  // Empêche l’appel au back si un champ est vide
   if (!email || !password || !nom || !prenom || !societe) {
-    return res.status(400).json({ error: "Champs requis manquants (email, mot de passe, nom, prénom, société)" });
+    return res.status(400).json({ error: "Champs requis manquants côté front !" });
   }
 
   const passwordHash = sha256(password);
@@ -37,7 +43,8 @@ export default async function handler(req, res) {
   }
 
   if (data.status === 'error') {
-    return res.status(400).json({ error: data.message });
+    // Remonte le debug s’il y a un souci
+    return res.status(400).json({ error: data.message, debug: data.debug_data || null });
   }
 
   res.status(200).json(data);
