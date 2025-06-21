@@ -1,4 +1,3 @@
-// /components/StatsDashboard.js
 import { useEffect, useState } from "react";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -77,7 +76,6 @@ export default function StatsDashboard({ user, admin }) {
             </ResponsiveContainer>
           </div>
         </div>
-        {/* Ajoute ici d'autres graphes ou stats si besoin */}
       </div>
     </div>
   );
