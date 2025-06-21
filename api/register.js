@@ -5,8 +5,8 @@ export default async function handler(req, res) {
   const { email, password, nom, prenom, societe } = req.body;
   const passwordHash = sha256(password);
 
-  // LOG pour debug
-  console.log("DEBUG REGISTER → body envoyé : ", {
+  // LOG pour debug, voir ce qui part au script
+  console.log("DEBUG AVANT FETCH → body envoyé :", {
     action: 'register',
     email,
     passwordHash,
@@ -34,6 +34,8 @@ export default async function handler(req, res) {
   });
 
   const raw = await resp.text();
+  console.log("Réponse brute du Script Google Apps :", raw); // LOG pour voir le retour exact
+
   let data;
   try { data = JSON.parse(raw); } catch (e) {
     return res.status(500).json({ error: `Réponse non JSON du Script: ${raw}` });
