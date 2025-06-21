@@ -1,193 +1,86 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Badge } from "react-bootstrap";
 
 export default function TicketsDashboard({ user }) {
   const [tickets, setTickets] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({
-    numero_commande: "",
-    problematique: "",
-    description: "",
-    transporteur: "",
-    urgence: "",
-    sla_cible: "",
-  });
-  const [msg, setMsg] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const loadTickets = async () => {
-    setLoading(true);
-    setMsg("Chargement des tickets...");
-    const res = await fetch("/api/tickets", {
+  useEffect(() => {
+    fetch("/api/tickets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action: "getTickets",
-        email: user.email,
-        societe: user.societe,
         role: user.role,
-      }),
-    });
-    const data = await res.json();
-    setTickets(data.tickets || []);
-    setLoading(false);
-    setMsg("");
-  };
-
-  useEffect(() => { loadTickets(); }, []);
-
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    setMsg("Création du ticket...");
-    const res = await fetch("/api/tickets", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "createTicket",
         societe: user.societe,
-        utilisateur: user.nom + " " + user.prenom,
-        email: user.email,
-        role: user.role,
-        ...form,
+        email: user.email
       }),
-    });
-    const data = await res.json();
-    if (data.status === "success") {
-      setMsg("Ticket créé !");
-      setForm({
-        numero_commande: "",
-        problematique: "",
-        description: "",
-        transporteur: "",
-        urgence: "",
-        sla_cible: "",
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        setTickets(data.tickets || []);
+        setLoading(false);
       });
-      loadTickets();
-    } else {
-      setMsg("Erreur : " + (data.error || JSON.stringify(data)));
-    }
-  };
-
-  const updateForm = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  }, []);
 
   return (
-    <div className="container my-4">
-      <h3>Mes tickets</h3>
-      <form className="row g-3 mb-4" onSubmit={handleCreate} style={{ background: "#f7f7fa", borderRadius: 10, padding: 20 }}>
+    <div className="container-fluid">
+      <h2 className="mb-4" style={{ fontWeight: 800, color: "#2b43c7" }}>
+        Mes Tickets
+      </h2>
+      <div className="row mb-4">
         <div className="col-md-4">
-          <input
-            type="text"
-            name="numero_commande"
-            className="form-control"
-            placeholder="Numéro de commande"
-            value={form.numero_commande}
-            onChange={updateForm}
-            required
-          />
+          <div className="card shadow-lg border-0">
+            <div className="card-body text-center">
+              <div style={{ fontSize: 42, fontWeight: 700, color: "#6441a5" }}>{tickets.length}</div>
+              <div style={{ fontWeight: 600, color: "#888" }}>Tickets créés</div>
+            </div>
+          </div>
         </div>
-        <div className="col-md-4">
-          <select name="problematique" className="form-select" value={form.problematique} onChange={updateForm} required>
-            <option value="">Problème</option>
-            <option value="Perte de colis">Perte de colis</option>
-            <option value="Colis endommagé">Colis endommagé</option>
-            <option value="Non reçu">Non reçu</option>
-            <option value="Erreur de préparation">Erreur de préparation</option>
-            <option value="Erreur réception">Erreur réception</option>
-            <option value="Produit endommagé">Produit endommagé</option>
-            <option value="Autre">Autre</option>
-          </select>
-        </div>
-        <div className="col-md-4">
-          <select name="transporteur" className="form-select" value={form.transporteur} onChange={updateForm} required>
-            <option value="">Transporteur</option>
-            <option value="Colissimo">Colissimo</option>
-            <option value="Mondial Relay">Mondial Relay</option>
-            <option value="Chronopost">Chronopost</option>
-            <option value="GLS">GLS</option>
-            <option value="DPD">DPD</option>
-            <option value="Autre">Autre</option>
-          </select>
-        </div>
-        <div className="col-md-6">
-          <textarea
-            name="description"
-            className="form-control"
-            placeholder="Description du problème"
-            value={form.description}
-            onChange={updateForm}
-            required
-          />
-        </div>
-        <div className="col-md-3">
-          <select name="urgence" className="form-select" value={form.urgence} onChange={updateForm}>
-            <option value="">Urgence</option>
-            <option value="Faible">Faible</option>
-            <option value="Normale">Normale</option>
-            <option value="Haute">Haute</option>
-            <option value="Critique">Critique</option>
-          </select>
-        </div>
-        <div className="col-md-3">
-          <input
-            type="text"
-            name="sla_cible"
-            className="form-control"
-            placeholder="SLA cible (ex : 48h)"
-            value={form.sla_cible}
-            onChange={updateForm}
-          />
-        </div>
-        <div className="col-12 text-end">
-          <button className="btn btn-primary" type="submit">Créer le ticket</button>
-        </div>
-        <div style={{ color: "red", marginTop: 10 }}>{msg}</div>
-      </form>
-
-      <div className="card shadow-sm">
-        <div className="card-body">
-          {loading ? (
-            <div>Chargement…</div>
-          ) : (
-            <table className="table table-striped">
-              <thead>
-                <tr>
-                  <th>N°</th>
-                  <th>Date</th>
-                  <th>Commande</th>
-                  <th>Problème</th>
-                  <th>Transporteur</th>
-                  <th>Urgence</th>
-                  <th>Statut</th>
-                  <th>Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tickets.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="text-center text-muted">
-                      Aucun ticket pour le moment.
+        {/* D’autres stats, widgets, couleurs ? */}
+      </div>
+      <div className="card shadow border-0">
+        <div className="card-header bg-white" style={{ fontWeight: 700 }}>Historique des Tickets</div>
+        <div className="table-responsive">
+          <table className="table table-striped align-middle">
+            <thead className="table-light">
+              <tr>
+                <th>#</th>
+                <th>Date</th>
+                <th>Commande</th>
+                <th>Problème</th>
+                <th>Transporteur</th>
+                <th>Statut</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={7} className="text-center">Chargement…</td></tr>
+              ) : tickets.length === 0 ? (
+                <tr><td colSpan={7} className="text-center text-muted">Aucun ticket</td></tr>
+              ) : (
+                tickets.map((t, i) => (
+                  <tr key={t.ID_Ticket || i}>
+                    <td>{i+1}</td>
+                    <td>{t.Date_Ouverture}</td>
+                    <td>{t.Numero_Commande}</td>
+                    <td>{t.Problematique}</td>
+                    <td>{t.Transporteur}</td>
+                    <td>
+                      <Badge bg={t.Statut === "Ouvert" ? "primary" : t.Statut === "Résolu" ? "success" : "warning"}>
+                        {t.Statut}
+                      </Badge>
                     </td>
+                    <td style={{ maxWidth: 220 }}>{t.Description}</td>
                   </tr>
-                ) : (
-                  tickets.map((t, i) => (
-                    <tr key={t.ID_Ticket || t.id_ticket || i}>
-                      <td>{i + 1}</td>
-                      <td>{t.Date_Ouverture || t.date_ouverture}</td>
-                      <td>{t.Numero_Commande || t.numero_commande}</td>
-                      <td>{t.Problematique || t.problematique}</td>
-                      <td>{t.Transporteur || t.transporteur}</td>
-                      <td>{t.Urgence || t.urgence}</td>
-                      <td>{t.Statut || t.statut}</td>
-                      <td style={{ maxWidth: 200 }}>{t.Description || t.description}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          )}
-        </div>
-        <div className="card-footer text-end">
-          <button className="btn btn-outline-secondary btn-sm" onClick={loadTickets}>Rafraîchir</button>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
   );
 }
+
