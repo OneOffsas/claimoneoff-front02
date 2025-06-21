@@ -7,9 +7,11 @@ export default function DashboardPage() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const u = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "{}") : {};
-    if (u.email) setUser(u);
-    else window.location.href = "/login";
+    if (typeof window !== "undefined") {
+      const u = JSON.parse(localStorage.getItem("user") || "{}");
+      if (u.email) setUser(u);
+      else window.location.href = "/login";
+    }
   }, []);
 
   if (!user) return <div>Chargement…</div>;
