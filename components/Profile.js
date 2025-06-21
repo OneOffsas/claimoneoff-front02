@@ -1,4 +1,3 @@
-// /components/Profile.js
 export default function Profile({ user }) {
   return (
     <div className="card shadow border-0 p-4">
