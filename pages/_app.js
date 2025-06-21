@@ -1,9 +1,11 @@
-// pages/_app.js
 import 'bootstrap/dist/css/bootstrap.min.css';
-import '../styles/globals.css'; // ou retire si tu n'as pas ce fichier
+import '../styles/global.css'; // Ton CSS custom si tu veux
+import { useEffect } from 'react';
 
-function MyApp({ Component, pageProps }) {
+export default function App({ Component, pageProps }) {
+  // Fix bug Bootstrap SSR sur Next.js
+  useEffect(() => {
+    import("bootstrap/dist/js/bootstrap.bundle.min.js");
+  }, []);
   return <Component {...pageProps} />;
 }
-
-export default MyApp;
