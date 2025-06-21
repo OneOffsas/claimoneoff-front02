@@ -1,0 +1,19 @@
+body {
+  background: linear-gradient(135deg, #f4f7fb, #cfd9ff 80%) !important;
+}
+.sidebar {
+  min-height: 100vh;
+  box-shadow: 2px 0 12px rgba(44,67,199,0.06);
+}
+.sidebar-logo {
+  letter-spacing: 2px;
+}
+.nav-link.active {
+  background: linear-gradient(90deg,#6441a5 60%,#2b43c7 100%) !important;
+  color: #fff !important;
+  border-radius: 8px;
+}
+.card {
+  border-radius: 18px !important;
+  box-shadow: 0 2px 18px rgba(44,67,199,0.06) !important;
+}
