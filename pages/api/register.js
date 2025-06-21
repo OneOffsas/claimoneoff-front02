@@ -1,42 +1,46 @@
 import { sha256 } from 'js-sha256';
 
 export default async function handler(req, res) {
-  try {
-    if (req.method !== 'POST') return res.status(405).end('Method Not Allowed');
+  if (req.method !== 'POST') return res.status(405).end('Method Not Allowed');
 
-    const { email, password, nom, prenom, societe } = req.body;
-    const passwordHash = sha256(password);
+  // Prends les champs attendus depuis le body
+  const { email, password, nom, prenom, societe } = req.body;
 
-    const workerUrl = process.env.CLOUDFLARE_WORKER_URL || "https://yellow-violet-1ba5.workers.dev";
-
-    // Envoie la requête
-    const resp = await fetch(`${workerUrl}?action=register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password: passwordHash, nom, prenom, societe }),
-    });
-
-    // Récupère la réponse brute (texte)
-    const raw = await resp.text();
-
-    // Tente de parser le JSON
-    let data;
-    try {
-      data = JSON.parse(raw);
-    } catch (e) {
-      // Si ce n'est pas du JSON, affiche le texte reçu
-      return res.status(500).json({ error: `Réponse non JSON du Worker: ${raw}` });
-    }
-
-    if (data.status === 'error') {
-      // Affiche l'erreur du worker directement côté front
-      return res.status(400).json({ error: data.message });
-    }
-
-    res.status(200).json(data);
-
-  } catch (err) {
-    // Si tout plante, affiche l'erreur du serveur
-    return res.status(500).json({ error: err.message || 'Erreur serveur inconnue' });
+  // Empêche l’envoi de champs vides
+  if (!email || !password || !nom || !prenom || !societe) {
+    return res.status(400).json({ error: "Champs requis manquants (email, mot de passe, nom, prénom, société)" });
   }
+
+  // Hash du mot de passe pour la sécurité
+  const passwordHash = sha256(password);
+
+  const scriptUrl = "https://script.google.com/macros/s/AKfycbxVsHNzAtfR55M3t7A-vk7RAZz2EO6fqzxKmlUACnNWnauWuQAt3ecSuPiNSDvoCI5-lw/exec";
+
+  // Envoie les bons champs, dont passwordHash (pas password !)
+  let resp = await fetch(scriptUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify({
+      email,
+      passwordHash,
+      nom,
+      prenom,
+      societe
+    }),
+  });
+
+  const raw = await resp.text();
+  let data;
+  try { data = JSON.parse(raw); } catch (e) {
+    return res.status(500).json({ error: `Réponse non JSON du Script: ${raw}` });
+  }
+
+  if (data.status === 'error') {
+    return res.status(400).json({ error: data.message });
+  }
+
+  res.status(200).json(data);
 }
