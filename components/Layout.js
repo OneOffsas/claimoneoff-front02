@@ -1,4 +1,3 @@
-// /components/Layout.js
 import { FaTachometerAlt, FaTicketAlt, FaChartBar, FaUsers, FaSignOutAlt, FaUser } from "react-icons/fa";
 import { useState } from "react";
 
