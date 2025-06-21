@@ -1,14 +1,10 @@
 import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
-import TicketsDashboard from "../components/TicketsDashboard";
-import StatsDashboard from "../components/StatsDashboard";
-import AdminTickets from "../components/AdminTickets";
-import Profile from "../components/Profile";
+import AdminCockpit from "../components/AdminCockpit";
+import ClientCockpit from "../components/ClientCockpit";
 
 export default function DashboardPage() {
-  // Suppose qu’après login, tu as sauvegardé user dans localStorage
   const [user, setUser] = useState(null);
-  const [page, setPage] = useState("dashboard");
 
   useEffect(() => {
     const u = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "{}") : {};
@@ -19,12 +15,8 @@ export default function DashboardPage() {
   if (!user) return <div>Chargement…</div>;
 
   return (
-    <Layout user={user} page={page} setPage={setPage}>
-      {page === "dashboard" && <StatsDashboard user={user} />}
-      {page === "tickets" && <TicketsDashboard user={user} />}
-      {page === "admin" && user.role === "Admin" && <AdminTickets user={user} />}
-      {page === "stats" && <StatsDashboard user={user} />}
-      {page === "profile" && <Profile user={user} />}
+    <Layout user={user}>
+      {(page) => user.role === "Admin" ? <AdminCockpit user={user} page={page} /> : <ClientCockpit user={user} page={page} />}
     </Layout>
   );
 }
