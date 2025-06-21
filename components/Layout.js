@@ -1,7 +1,6 @@
 // /components/Layout.js
 import { FaTachometerAlt, FaTicketAlt, FaChartBar, FaUsers, FaSignOutAlt, FaUser } from "react-icons/fa";
 import { useState } from "react";
-import "../styles/global.css"; // ou adapte si besoin
 
 export default function Layout({ user, children }) {
   const [page, setPage] = useState("dashboard");
