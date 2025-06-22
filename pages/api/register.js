@@ -1,51 +1,49 @@
-import { GoogleSpreadsheet } from 'google-spreadsheet';
+// pages/register.js
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method Not Allowed' });
-  }
+import { useState } from "react";
 
-  // On récupère les infos du body
-  const { Societe, Nom, Prenom, Email, MotDePasse_Hash, Role } = req.body;
+export default function Register() {
+  const [form, setForm] = useState({
+    societe: "",
+    nom: "",
+    prenom: "",
+    email: "",
+    motDePasse: "",
+    role: "client",
+  });
+  const [message, setMessage] = useState("");
 
-  if (!Societe || !Nom || !Prenom || !Email || !MotDePasse_Hash || !Role) {
-    return res.status(400).json({ message: 'Champs obligatoires manquants' });
-  }
+  const handleChange = e => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
-  try {
-    // Authentification avec les variables d'environnement
-    const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID);
-    await doc.useServiceAccountAuth({
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  const handleSubmit = async e => {
+    e.preventDefault();
+    setMessage("");
+    const res = await fetch("/api/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
     });
-    await doc.loadInfo();
-    const sheet = doc.sheetsByTitle['Utilisateurs_ClaimOneOff'];
+    const data = await res.json();
+    if (res.ok) setMessage("Inscription réussie !");
+    else setMessage(data.message || "Erreur à l'inscription");
+  };
 
-    // Génère un nouvel ID (option simplifiée)
-    const rows = await sheet.getRows();
-    const lastID = rows.length > 0 ? parseInt(rows[rows.length - 1].ID_User, 10) : 0;
-    const newID = (lastID + 1).toString();
-
-    const dateNow = new Date().toISOString();
-
-    // Ajoute la ligne
-    await sheet.addRow({
-      ID_User: newID,
-      Societe,
-      Nom,
-      Prenom,
-      Email,
-      MotDePasse_Hash,
-      Role,
-      Actif: "1",
-      Date_Inscription: dateNow,
-      Derniere_Connexion: "",
-    });
-
-    return res.status(200).json({ message: 'Inscription réussie' });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: 'Erreur serveur', error: error.message });
-  }
+  return (
+    <div style={{maxWidth: 400, margin: "auto", padding: 30}}>
+      <h2>Inscription</h2>
+      <form onSubmit={handleSubmit}>
+        <input name="societe" placeholder="Société" value={form.societe} onChange={handleChange} required /><br />
+        <input name="nom" placeholder="Nom" value={form.nom} onChange={handleChange} required /><br />
+        <input name="prenom" placeholder="Prénom" value={form.prenom} onChange={handleChange} required /><br />
+        <input name="email" placeholder="Email" type="email" value={form.email} onChange={handleChange} required /><br />
+        <input name="motDePasse" placeholder="Mot de passe" type="password" value={form.motDePasse} onChange={handleChange} required /><br />
+        {/* Role caché */}
+        <input type="hidden" name="role" value="client" />
+        <button type="submit">S'inscrire</button>
+      </form>
+      {message && <p>{message}</p>}
+    </div>
+  );
 }
