@@ -1,25 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Optionnel : Ajoute tes propres styles globaux ici */
 body {
-  background: #f4f5fb;
-  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-}
-.card {
-  border-radius: 18px;
-  box-shadow: 0 6px 24px #32127a0a, 0 1.5px 6px #6842d966;
-  background: #fff;
-}
-.btn-primary {
-  background: linear-gradient(92deg,#6842d9,#3b328a 90%);
-  border: none;
-  color: #fff;
-  border-radius: 1.5rem;
-  padding: 8px 24px;
-  font-weight: bold;
-  font-size: 1rem;
-  transition: filter 0.12s;
-}
-.btn-primary:hover { filter: brightness(0.9); }
-input, select, textarea {
-  border-radius: 1rem !important;
-  border: 1px solid #ccc !important;
-  padding: 8px !important;
+  @apply bg-gray-100 text-gray-900;
 }
