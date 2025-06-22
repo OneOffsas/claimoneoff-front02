@@ -30,15 +30,13 @@ export default function TicketsTable() {
         </thead>
         <tbody>
           {tickets.map((t, i) => (
-            <tr key={t.id_ticket} className="hover:bg-gray-50">
+            <tr key={t.id_ticket} className="hover:bg-gray-50 cursor-pointer" onClick={() => setSelected(t)}>
               <td className="p-3">{i+1}</td>
               <td className="p-3">{t.societe}</td>
               <td className="p-3">{t.problematique}</td>
               <td className="p-3">{t.statut}</td>
               <td className="p-3">{t.date_ouverture}</td>
-              <td className="p-3">
-                <button className="text-blue-600 hover:underline" onClick={() => setSelected(t)}>Voir</button>
-              </td>
+              <td className="p-3"><span className="text-blue-600 underline">Voir</span></td>
             </tr>
           ))}
         </tbody>
