@@ -1,39 +1,31 @@
-import { sha256 } from 'js-sha256';
-
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).end('Method Not Allowed');
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ error: "Champs requis manquants (email, mot de passe)" });
+  if (req.method !== "POST") {
+    res.status(405).json({ status: "error", message: "Méthode non autorisée" });
+    return;
   }
-
-  const passwordHash = sha256(password);
-
-  const scriptUrl = "https://script.google.com/macros/s/AKfycbxVsHNzAtfR55M3t7A-vk7RAZz2EO6fqzxKmlUACnNWnauWuQAt3ecSuPiNSDvoCI5-lw/exec";
-
-  let resp = await fetch(scriptUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    },
-    body: JSON.stringify({
-      action: "login",
-      email,
-      passwordHash
-    }),
-  });
-
-  const raw = await resp.text();
-  let data;
-  try { data = JSON.parse(raw); } catch (e) {
-    return res.status(500).json({ error: `Réponse non JSON du Script: ${raw}` });
+  const { email, passwordHash } = req.body;
+  // Vérification basique
+  if (!email || !passwordHash) {
+    res.status(400).json({ status: "error", message: "Champs manquants" });
+    return;
   }
-
-  if (data.status === 'error') {
-    return res.status(400).json({ error: data.message });
+  try {
+    const response = await fetch("https://yellow-violet-1ba5.oneoffsas.workers.dev/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "login",
+        email,
+        passwordHash
+      })
+    });
+    const data = await response.json();
+    if (data.status === "success") {
+      res.status(200).json(data);
+    } else {
+      res.status(400).json(data);
+    }
+  } catch (err) {
+    res.status(500).json({ status: "error", message: "Erreur de connexion au serveur !" });
   }
-
-  res.status(200).json(data);
 }
