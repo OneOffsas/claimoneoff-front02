@@ -6,11 +6,11 @@ export default function TicketsChart({ stats }) {
     { name: "Résolus", value: stats.resolu || 0 },
     { name: "En retard", value: stats.retard || 0 },
   ];
-  const COLORS = ["#7c3aed", "#38bdf8", "#ef4444"];
+  const COLORS = ["#8b5cf6", "#38bdf8", "#ef4444"];
   return (
-    <div className="bg-white rounded-xl p-6 shadow mb-8">
-      <h2 className="text-lg font-semibold mb-4">Répartition des tickets</h2>
-      <ResponsiveContainer width="100%" height={250}>
+    <div className="bg-white rounded-2xl p-8 shadow mb-8">
+      <h2 className="text-xl font-bold mb-6">Répartition des tickets</h2>
+      <ResponsiveContainer width="100%" height={240}>
         <PieChart>
           <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
             {data.map((entry, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
