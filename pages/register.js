@@ -1,51 +1,46 @@
-// pages/api/register.js
+import React, { useState } from "react";
 
-export default async function handler(req, res) {
-  // 1. Autorise uniquement les requêtes POST
-  if (req.method !== "POST") {
-    res.status(405).json({ status: "error", message: "Méthode non autorisée" });
-    return;
-  }
+export default function Register() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [nom, setNom] = useState("");
+  const [prenom, setPrenom] = useState("");
+  const [societe, setSociete] = useState("");
+  const [message, setMessage] = useState("");
 
-  // 2. Déstructure les champs reçus
-  const { email, passwordHash, nom, prenom, societe } = req.body;
+  async function handleRegister(e) {
+    e.preventDefault();
 
-  // 3. Vérifie la présence de tous les champs requis
-  if (!email || !passwordHash || !nom || !prenom || !societe) {
-    res.status(400).json({
-      status: "error",
-      message: "Champs manquants : email, passwordHash, nom, prenom, societe sont requis."
-    });
-    return;
-  }
+    // Ne jamais hasher ici avec window.sha256, utilise la lib js-sha256
+    const sha256 = (await import("js-sha256")).sha256;
+    const passwordHash = sha256(password);
 
-  try {
-    // 4. Appelle ton Worker ou Apps Script
-    const response = await fetch("https://yellow-violet-1ba5.oneoffsas.workers.dev/", {
+    const res = await fetch("/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        action: "register",
-        email,
-        passwordHash,
-        nom,
-        prenom,
-        societe
-      }),
+        email, passwordHash, nom, prenom, societe
+      })
     });
 
-    // 5. Tente de lire la réponse (en JSON)
-    const data = await response.json();
-
-    // 6. Renvoie le résultat côté front
+    const data = await res.json();
     if (data.status === "success") {
-      res.status(200).json(data);
+      setMessage("Inscription réussie !");
     } else {
-      // Message d’erreur retourné par le backend (ex: email déjà utilisé)
-      res.status(400).json(data);
+      setMessage(data.message || "Erreur lors de l'inscription");
     }
-  } catch (err) {
-    // Erreur de connexion ou autre
-    res.status(500).json({ status: "error", message: "Erreur serveur lors de l'inscription !" });
   }
+
+  return (
+    <form onSubmit={handleRegister} style={{ maxWidth: 400, margin: "auto" }}>
+      <h2>Inscription</h2>
+      <input placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required className="form-control mb-2" />
+      <input placeholder="Nom" value={nom} onChange={e => setNom(e.target.value)} required className="form-control mb-2" />
+      <input placeholder="Prénom" value={prenom} onChange={e => setPrenom(e.target.value)} required className="form-control mb-2" />
+      <input placeholder="Société" value={societe} onChange={e => setSociete(e.target.value)} required className="form-control mb-2" />
+      <input placeholder="Mot de passe" type="password" value={password} onChange={e => setPassword(e.target.value)} required className="form-control mb-2" />
+      <button type="submit" className="btn btn-primary w-100">S'inscrire</button>
+      {message && <div className="alert alert-info mt-2">{message}</div>}
+    </form>
+  );
 }
