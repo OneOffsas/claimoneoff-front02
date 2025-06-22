@@ -13,13 +13,12 @@ export default function Register() {
   });
   const [message, setMessage] = useState("");
 
-  const handleChange = e => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async e => {
     e.preventDefault();
     setMessage("");
+    console.log(form); // Vérifie la data
     const res = await fetch("/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -31,19 +30,14 @@ export default function Register() {
   };
 
   return (
-    <div style={{maxWidth: 400, margin: "auto", padding: 30}}>
-      <h2>Inscription</h2>
-      <form onSubmit={handleSubmit}>
-        <input name="societe" placeholder="Société" value={form.societe} onChange={handleChange} required /><br />
-        <input name="nom" placeholder="Nom" value={form.nom} onChange={handleChange} required /><br />
-        <input name="prenom" placeholder="Prénom" value={form.prenom} onChange={handleChange} required /><br />
-        <input name="email" placeholder="Email" type="email" value={form.email} onChange={handleChange} required /><br />
-        <input name="motDePasse" placeholder="Mot de passe" type="password" value={form.motDePasse} onChange={handleChange} required /><br />
-        {/* Role caché */}
-        <input type="hidden" name="role" value="client" />
-        <button type="submit">S'inscrire</button>
-      </form>
+    <form onSubmit={handleSubmit}>
+      <input name="societe" placeholder="Société" onChange={handleChange} required />
+      <input name="nom" placeholder="Nom" onChange={handleChange} required />
+      <input name="prenom" placeholder="Prénom" onChange={handleChange} required />
+      <input name="email" placeholder="Email" type="email" onChange={handleChange} required />
+      <input name="motDePasse" placeholder="Mot de passe" type="password" onChange={handleChange} required />
+      <button type="submit">S'inscrire</button>
       {message && <p>{message}</p>}
-    </div>
+    </form>
   );
 }
