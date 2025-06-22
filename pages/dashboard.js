@@ -1,26 +1,25 @@
 import { useEffect, useState } from "react";
-import Layout from "../components/Layout";
-import AdminCockpit from "../components/AdminCockpit";
+import { useNotification } from "../components/NotificationProvider";
 import ClientCockpit from "../components/ClientCockpit";
+import AdminCockpit from "../components/AdminCockpit";
 
-export default function DashboardPage() {
+export default function Dashboard() {
+  const { showNotification } = useNotification();
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const u = JSON.parse(localStorage.getItem("user") || "{}");
-      if (u.email) setUser(u);
-      else window.location.href = "/login";
+    const u = JSON.parse(localStorage.getItem("user"));
+    if (!u) {
+      window.location.href = "/login";
+    } else {
+      setUser(u);
+      showNotification(`Bienvenue ${u.prenom || u.nom || ""} !`, "success");
     }
   }, []);
 
-  if (!user) return <div>Chargement…</div>;
+  if (!user) return null;
 
-  return (
-    <Layout user={user}>
-      {(page) => user.role === "Admin"
-        ? <AdminCockpit user={user} page={page} />
-        : <ClientCockpit user={user} page={page} />}
-    </Layout>
-  );
+  return user.role === "Admin"
+    ? <AdminCockpit user={user} />
+    : <ClientCockpit user={user} />;
 }
