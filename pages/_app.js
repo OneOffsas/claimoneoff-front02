@@ -1,12 +1,5 @@
-import '../styles/global.css'
-import 'react-toastify/dist/ReactToastify.css';
-import { ToastContainer } from 'react-toastify';
+import '../styles/globals.css'
 
-export default function MyApp({ Component, pageProps }) {
-  return (
-    <>
-      <Component {...pageProps} />
-      <ToastContainer position="top-right" autoClose={2500} />
-    </>
-  )
+export default function App({ Component, pageProps }) {
+  return <Component {...pageProps} />
 }
