@@ -1,80 +1,46 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { toast } from "react-toastify";
 
-export default function TicketDetail({ ticket, onClose }) {
-  const [statut, setStatut] = useState(ticket.Statut);
+export default function TicketDetail({ ticket, onBack }) {
+  const [status, setStatus] = useState(ticket.statut);
   const [comment, setComment] = useState("");
 
-  function handleUpdateStatut(e) {
-    e.preventDefault();
-    fetch("/api/updateTicket", {
+  function updateStatus() {
+    fetch("/api/admin/update-ticket", {
       method: "POST",
-      body: JSON.stringify({
-        action: "updateTicket",
-        id_ticket: ticket.ID_Ticket,
-        fields: { Statut: statut }
-      }),
       headers: { "Content-Type": "application/json" },
-    })
-      .then(r => r.json())
-      .then(data => {
-        if (data.status === "success") toast.success("Statut mis à jour !");
-        else toast.error(data.message);
-      });
+      body: JSON.stringify({ id: ticket.id_ticket, statut: status }),
+    }).then(() => toast.success("Statut mis à jour"));
   }
-
-  function handleAddComment(e) {
-    e.preventDefault();
-    fetch("/api/addComment", {
+  function addComment() {
+    fetch("/api/admin/add-comment", {
       method: "POST",
-      body: JSON.stringify({
-        action: "addComment",
-        id_ticket: ticket.ID_Ticket,
-        utilisateur: "Admin",
-        commentaire: comment
-      }),
       headers: { "Content-Type": "application/json" },
-    })
-      .then(r => r.json())
-      .then(data => {
-        if (data.status === "success") {
-          toast.success("Commentaire ajouté !");
-          setComment("");
-        } else toast.error(data.message);
-      });
+      body: JSON.stringify({ id: ticket.id_ticket, commentaire: comment }),
+    }).then(() => { toast.success("Commentaire ajouté"); setComment(""); });
   }
 
   return (
-    <div className="modal-backdrop show" style={{zIndex: 9999}}>
-      <div className="modal d-block" tabIndex="-1">
-        <div className="modal-dialog modal-lg">
-          <div className="modal-content shadow-lg">
-            <div className="modal-header">
-              <h5 className="modal-title">Ticket {ticket.ID_Ticket}</h5>
-              <button type="button" className="btn-close" onClick={onClose}></button>
-            </div>
-            <div className="modal-body">
-              <p><b>Statut :</b> {statut}</p>
-              <form onSubmit={handleUpdateStatut} className="mb-3">
-                <select className="form-select" value={statut} onChange={e => setStatut(e.target.value)}>
-                  <option>Ouvert</option>
-                  <option>En cours</option>
-                  <option>Résolu</option>
-                  <option>Fermé</option>
-                </select>
-                <button className="btn btn-primary mt-2" type="submit">Changer le statut</button>
-              </form>
-              <h6>Fil de discussion :</h6>
-              <pre className="bg-light p-2" style={{minHeight:80}}>
-                {ticket.Discussion || "Aucun commentaire."}
-              </pre>
-              <form onSubmit={handleAddComment}>
-                <textarea className="form-control mb-2" value={comment} onChange={e => setComment(e.target.value)} placeholder="Ajouter un commentaire..." />
-                <button className="btn btn-success" type="submit">Envoyer</button>
-              </form>
-            </div>
-          </div>
-        </div>
+    <div className="bg-white shadow rounded-xl p-6">
+      <button onClick={onBack} className="mb-4 text-sm text-blue-600 underline">← Retour</button>
+      <h2 className="text-xl font-bold mb-2">Ticket {ticket.id_ticket}</h2>
+      <div className="mb-2"><b>Problématique :</b> {ticket.problematique}</div>
+      <div className="mb-2"><b>Description :</b> {ticket.description}</div>
+      <div className="mb-2"><b>Statut :</b> 
+        <select value={status} onChange={e => setStatus(e.target.value)} className="ml-2">
+          <option>Ouvert</option>
+          <option>En cours</option>
+          <option>Résolu</option>
+          <option>Fermé</option>
+        </select>
+        <button onClick={updateStatus} className="ml-3 px-3 py-1 rounded bg-violet-600 text-white">Enregistrer</button>
+      </div>
+      <div className="mt-6">
+        <b>Fil de discussion :</b>
+        {/* A adapter selon structure ticket */}
+        <div className="bg-gray-50 rounded p-3 mt-2 min-h-[60px]">{ticket.discussion || "Pas encore de message."}</div>
+        <textarea className="mt-3 w-full border rounded p-2" value={comment} onChange={e => setComment(e.target.value)} placeholder="Ajouter un commentaire..." />
+        <button onClick={addComment} className="mt-2 px-3 py-1 rounded bg-blue-600 text-white">Ajouter</button>
       </div>
     </div>
   );
