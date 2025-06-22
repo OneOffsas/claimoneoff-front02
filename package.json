@@ -21,6 +21,7 @@
     "google-auth-library": "^9.0.0"
   },
   "devDependencies": {
+    "tailwindcss": "^3.4.1",
     "postcss": "8.5.5",
     "autoprefixer": "10.4.21"
   }
