@@ -17,7 +17,7 @@
     "recharts": "^2.7.2",
     "react-toastify": "^9.1.3",
     "js-sha256": "^0.9.0",
-    "google-spreadsheet": "^3.4.0",
+    "google-spreadsheet": "^3.3.0",
     "google-auth-library": "^9.0.0"
   },
   "devDependencies": {
