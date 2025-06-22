@@ -1,54 +1,70 @@
 import React, { useState } from "react";
 import { sha256 } from "js-sha256";
-import { toast } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
 
-export default function LoginPage() {
+export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e) => {
+  async function handleLogin(e) {
     e.preventDefault();
-    if (!email || !password) {
-      toast.error("Merci de remplir tous les champs !");
-      return;
-    }
-    try {
-      const res = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "login",
-          email,
-          passwordHash: sha256(password)
-        })
-      });
-      const data = await res.json();
-      if (data.status === "success") {
-        toast.success("Connexion réussie !");
-        // ici tu peux rediriger, stocker le user, etc.
+    setLoading(true);
+
+    // Hash du mot de passe avant envoi
+    const passwordHash = sha256(password);
+
+    const res = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, passwordHash }),
+    });
+
+    const data = await res.json();
+
+    if (data.status === "success") {
+      toast.success("Connexion réussie !");
+      setTimeout(() => {
+        // Redirige vers le dashboard après 1s
         window.location.href = "/dashboard";
-      } else {
-        toast.error(data.message || "Erreur de connexion !");
-      }
-    } catch (err) {
-      toast.error("Erreur de connexion réseau !");
+      }, 1000);
+    } else {
+      toast.error(data.message || "Erreur de connexion");
     }
-  };
+    setLoading(false);
+  }
 
   return (
-    <form onSubmit={handleLogin} className="p-4 card shadow mt-5" style={{maxWidth:480, margin:"auto"}}>
-      <h2 className="mb-4">Connexion</h2>
-      <div className="mb-3">
-        <label className="form-label">Email</label>
-        <input type="email" className="form-control" value={email}
-          onChange={e => setEmail(e.target.value)} required />
-      </div>
-      <div className="mb-3">
-        <label className="form-label">Mot de passe</label>
-        <input type="password" className="form-control" value={password}
-          onChange={e => setPassword(e.target.value)} required />
-      </div>
-      <button type="submit" className="btn btn-primary w-100">Se connecter</button>
-    </form>
+    <div className="container" style={{ maxWidth: 400, margin: "auto", marginTop: "100px" }}>
+      <ToastContainer position="top-center" />
+      <form onSubmit={handleLogin} className="card shadow p-4">
+        <h2 className="mb-4 text-center">Connexion</h2>
+        <input
+          type="email"
+          placeholder="Email"
+          className="form-control mb-3"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          required
+        />
+        <input
+          type="password"
+          placeholder="Mot de passe"
+          className="form-control mb-3"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          required
+        />
+        <button
+          className="btn btn-primary w-100"
+          type="submit"
+          disabled={loading}
+        >
+          {loading ? "Connexion..." : "Se connecter"}
+        </button>
+      </form>
+    </div>
   );
 }
+
