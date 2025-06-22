@@ -1,10 +1,12 @@
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import { JWT } from 'google-auth-library';
 
-const SPREADSHEET_ID = '1cyelemAe1Pjaj6qlXp8WhFTyOhF6q1LhpqDeQ5V58bM'; // <-- TON ID
-const CLIENT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+// === PARAMÈTRES À CONFIGURER ===
+const SPREADSHEET_ID = '1cyelemAe1Pjaj6qlXp8WhFTyOhF6q1LhpqDeQ5V58bM';
+const GOOGLE_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || 'oneoffsas@gmail.com';
+const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
+// === HANDLER INSCRIPTION ===
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Méthode non autorisée' });
@@ -12,36 +14,44 @@ export default async function handler(req, res) {
 
   const { email, password, nom, prenom, societe } = req.body;
 
+  // Vérif des champs obligatoires
   if (!email || !password || !nom || !prenom || !societe) {
     return res.status(400).json({ error: 'Champs manquants' });
   }
 
   try {
+    // Auth Google Service Account
     const serviceAccountAuth = new JWT({
-      email: CLIENT_EMAIL,
-      key: PRIVATE_KEY,
+      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: GOOGLE_PRIVATE_KEY,
       scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
+
+    // Connexion Google Sheets
     const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
     await doc.loadInfo();
     const sheet = doc.sheetsByTitle['Utilisateurs_ClaimOneOff'];
 
-    // Vérifie l'unicité de l'email
+    // Chargement des utilisateurs existants
     await sheet.loadHeaderRow();
     const rows = await sheet.getRows();
-    const existingUser = rows.find(row => row.Email === email);
-    if (existingUser) {
+    const exist = rows.find(row => row.Email && row.Email.toLowerCase() === email.toLowerCase());
+
+    if (exist) {
       return res.status(409).json({ error: "L'utilisateur existe déjà" });
     }
 
-    // Ajoute l'utilisateur
+    // Génère un ID unique
+    const userId = "USER_" + Date.now() + "_" + Math.floor(Math.random()*10000);
+
+    // Ajoute l'utilisateur (les noms de colonnes doivent exister dans ta sheet !)
     await sheet.addRow({
-      ID_User: "USER_" + Date.now(),
+      ID_User: userId,
       Societe: societe,
       Nom: nom,
       Prenom: prenom,
       Email: email,
-      MotDePasse_Hash: password, // tu peux hasher côté front avant d'envoyer
+      MotDePasse_Hash: password, // Hash côté front obligatoire !
       Role: "Client",
       Actif: "Oui",
       Date_Inscription: new Date().toLocaleString('fr-FR'),
@@ -54,3 +64,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Erreur serveur", details: err.message });
   }
 }
+
