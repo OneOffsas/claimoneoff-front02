@@ -1,42 +1,56 @@
-import { sha256 } from 'js-sha256';
+import { GoogleSpreadsheet } from 'google-spreadsheet';
+import { JWT } from 'google-auth-library';
+
+const SPREADSHEET_ID = '1cyelemAe1Pjaj6qlXp8WhFTyOhF6q1LhpqDeQ5V58bM'; // <-- TON ID
+const CLIENT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).end('Method Not Allowed');
-  // On récupère TOUT ce qui vient du front
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Méthode non autorisée' });
+  }
+
   const { email, password, nom, prenom, societe } = req.body;
 
-  // LOG : tu dois voir TOUT rempli ici
-  console.log("PAYLOAD AVANT ENVOI SCRIPT", { email, password, nom, prenom, societe });
-
-  // Si un champ est manquant ici, TON FORMULAIRE est en cause !
   if (!email || !password || !nom || !prenom || !societe) {
-    return res.status(400).json({ error: "Champs requis manquants côté front !" });
+    return res.status(400).json({ error: 'Champs manquants' });
   }
 
-  const passwordHash = sha256(password);
+  try {
+    const serviceAccountAuth = new JWT({
+      email: CLIENT_EMAIL,
+      key: PRIVATE_KEY,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+    await doc.loadInfo();
+    const sheet = doc.sheetsByTitle['Utilisateurs_ClaimOneOff'];
 
-  const scriptUrl = "https://script.google.com/macros/s/AKfycbxVsHNzAtfR55M3t7A-vk7RAZz2EO6fqzxKmlUACnNWnauWuQAt3ecSuPiNSDvoCI5-lw/exec";
+    // Vérifie l'unicité de l'email
+    await sheet.loadHeaderRow();
+    const rows = await sheet.getRows();
+    const existingUser = rows.find(row => row.Email === email);
+    if (existingUser) {
+      return res.status(409).json({ error: "L'utilisateur existe déjà" });
+    }
 
-  // Envoie tout (pas d'erreur de casse)
-  let resp = await fetch(scriptUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({
-      email,
-      passwordHash,
-      nom,
-      prenom,
-      societe
-    }),
-  });
+    // Ajoute l'utilisateur
+    await sheet.addRow({
+      ID_User: "USER_" + Date.now(),
+      Societe: societe,
+      Nom: nom,
+      Prenom: prenom,
+      Email: email,
+      MotDePasse_Hash: password, // tu peux hasher côté front avant d'envoyer
+      Role: "Client",
+      Actif: "Oui",
+      Date_Inscription: new Date().toLocaleString('fr-FR'),
+      Derniere_Connexion: "",
+    });
 
-  const raw = await resp.text();
-  let data;
-  try { data = JSON.parse(raw); } catch (e) {
-    return res.status(500).json({ error: `Réponse non JSON du Script: ${raw}` });
+    return res.status(200).json({ success: true, message: 'Inscription réussie' });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Erreur serveur", details: err.message });
   }
-  if (data.status === 'error') {
-    return res.status(400).json({ error: data.message, debug: data.debug_data || null });
-  }
-  res.status(200).json(data);
 }
