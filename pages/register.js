@@ -8,9 +8,9 @@ export default function Register() {
     e.preventDefault();
     setLoading(true);
     setMessage("");
+    const societe = e.target.societe.value;
     const nom = e.target.nom.value;
     const prenom = e.target.prenom.value;
-    const societe = e.target.societe.value;
     const email = e.target.email.value;
     const motdepasse = e.target.motdepasse.value;
     const role = e.target.role.value;
@@ -18,7 +18,7 @@ export default function Register() {
     const res = await fetch("/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nom, prenom, societe, email, motdepasse, role }),
+      body: JSON.stringify({ societe, nom, prenom, email, motdepasse, role }),
     });
 
     const data = await res.json();
@@ -35,9 +35,9 @@ export default function Register() {
     <div style={{ maxWidth: 400, margin: "40px auto" }}>
       <h2>Créer un compte</h2>
       <form onSubmit={handleRegister} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <input name="societe" placeholder="Société" required />
         <input name="nom" placeholder="Nom" required />
         <input name="prenom" placeholder="Prénom" required />
-        <input name="societe" placeholder="Société" required />
         <input name="email" placeholder="Email" type="email" required />
         <input name="motdepasse" placeholder="Mot de passe" type="password" required />
         <select name="role" required>
