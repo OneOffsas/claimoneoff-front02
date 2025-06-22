@@ -1,22 +1,27 @@
-import AdminLayout from "../../components/AdminLayout";
-import StatsCards from "../../components/StatsCards";
-import TicketsChart from "../../components/TicketsChart";
-import { useEffect, useState } from "react";
-import { toast } from "react-toastify";
+import Sidebar from '../../components/Sidebar'
 
 export default function Dashboard() {
-  const [stats, setStats] = useState(null);
-  useEffect(() => {
-    fetch("/api/admin/stats")
-      .then(r => r.json())
-      .then(data => setStats(data))
-      .catch(() => toast.error("Erreur de chargement des statistiques"));
-  }, []);
   return (
-    <AdminLayout current="dashboard">
-      <h1 className="text-3xl font-bold mb-8">Dashboard global</h1>
-      <StatsCards stats={stats} />
-      <TicketsChart stats={stats} />
-    </AdminLayout>
+    <div className="min-h-screen flex">
+      <Sidebar />
+      <main className="flex-1 p-10 pl-72">
+        <h1 className="text-4xl font-bold mb-6">Dashboard global</h1>
+        <div className="grid grid-cols-3 gap-6">
+          <div className="rounded-2xl shadow p-6 bg-white">
+            <p className="text-lg font-medium text-gray-600">Tickets ouverts</p>
+            <p className="text-3xl font-bold text-violet-700">12</p>
+          </div>
+          <div className="rounded-2xl shadow p-6 bg-white">
+            <p className="text-lg font-medium text-gray-600">Tickets résolus</p>
+            <p className="text-3xl font-bold text-green-600">8</p>
+          </div>
+          <div className="rounded-2xl shadow p-6 bg-white">
+            <p className="text-lg font-medium text-gray-600">Temps moyen de résolution</p>
+            <p className="text-3xl font-bold text-blue-600">2h37</p>
+          </div>
+        </div>
+        {/* Tu ajoutes ici les graphs ou ce que tu veux */}
+      </main>
+    </div>
   );
 }
