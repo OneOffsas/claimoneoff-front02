@@ -1,67 +1,55 @@
+// pages/api/register.js
 import { GoogleSpreadsheet } from 'google-spreadsheet';
-import { JWT } from 'google-auth-library';
 
-// === PARAMÈTRES À CONFIGURER ===
-const SPREADSHEET_ID = '1cyelemAe1Pjaj6qlXp8WhFTyOhF6q1LhpqDeQ5V58bM';
-const GOOGLE_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || 'oneoffsas@gmail.com';
-const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-
-// === HANDLER INSCRIPTION ===
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Méthode non autorisée' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Méthode non autorisée' });
 
-  const { email, password, nom, prenom, societe } = req.body;
+  // Récupérer les infos du formulaire
+  const { nom, prenom, societe, email, motdepasse, role } = req.body;
 
-  // Vérif des champs obligatoires
-  if (!email || !password || !nom || !prenom || !societe) {
+  if (!nom || !prenom || !societe || !email || !motdepasse || !role) {
     return res.status(400).json({ error: 'Champs manquants' });
   }
 
   try {
-    // Auth Google Service Account
-    const serviceAccountAuth = new JWT({
-      email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      key: GOOGLE_PRIVATE_KEY,
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
+    // Variables d'environnement Netlify
+    const GOOGLE_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+    const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n');
+    const GOOGLE_SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID;
 
-    // Connexion Google Sheets
-    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
-    await doc.loadInfo();
-    const sheet = doc.sheetsByTitle['Utilisateurs_ClaimOneOff'];
-
-    // Chargement des utilisateurs existants
-    await sheet.loadHeaderRow();
-    const rows = await sheet.getRows();
-    const exist = rows.find(row => row.Email && row.Email.toLowerCase() === email.toLowerCase());
-
-    if (exist) {
-      return res.status(409).json({ error: "L'utilisateur existe déjà" });
+    // Sécurité : Vérifier que toutes les variables sont bien là
+    if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY || !GOOGLE_SPREADSHEET_ID) {
+      return res.status(500).json({ error: 'Variables d’environnement manquantes.' });
     }
 
-    // Génère un ID unique
-    const userId = "USER_" + Date.now() + "_" + Math.floor(Math.random()*10000);
+    // Connexion à Google Sheets
+    const doc = new GoogleSpreadsheet(GOOGLE_SPREADSHEET_ID);
+    await doc.useServiceAccountAuth({
+      client_email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: GOOGLE_PRIVATE_KEY,
+    });
+    await doc.loadInfo();
 
-    // Ajoute l'utilisateur (les noms de colonnes doivent exister dans ta sheet !)
+    // On cible la feuille Utilisateurs_ClaimOneOff
+    const sheet = doc.sheetsByTitle['Utilisateurs_ClaimOneOff'];
+    if (!sheet) {
+      return res.status(500).json({ error: "Feuille 'Utilisateurs_ClaimOneOff' introuvable" });
+    }
+
+    // Ajout d'une nouvelle ligne
     await sheet.addRow({
-      ID_User: userId,
-      Societe: societe,
       Nom: nom,
-      Prenom: prenom,
+      Prénom: prenom,
+      Société: societe,
       Email: email,
-      MotDePasse_Hash: password, // Hash côté front obligatoire !
-      Role: "Client",
-      Actif: "Oui",
-      Date_Inscription: new Date().toLocaleString('fr-FR'),
-      Derniere_Connexion: "",
+      MotDePasse: motdepasse, // ⚠️ Le mot de passe doit être hashé en prod !
+      Rôle: role,
+      DateInscription: new Date().toLocaleString('fr-FR'),
     });
 
-    return res.status(200).json({ success: true, message: 'Inscription réussie' });
+    return res.status(200).json({ status: 'success' });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: "Erreur serveur", details: err.message });
+    return res.status(500).json({ error: 'Erreur serveur: ' + err.message });
   }
 }
-
