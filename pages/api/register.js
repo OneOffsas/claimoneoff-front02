@@ -1,29 +1,17 @@
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 
-// Récupérer les variables d'environnement Netlify
-const GOOGLE_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+const GOOGLE_SERVICE_ACCOUNT_EMAIL = "oneoffsas@oneoff.iam.gserviceaccount.com";
 const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY
   ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n')
   : undefined;
-const GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID;
-const USERS_SHEET_TITLE = process.env.GOOGLE_SHEET_USERS_TAB || 'Utilisateurs_ClaimOneOff';
-
-// Vérifier que toutes les variables sont bien présentes
-function checkEnv(res) {
-  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY || !GOOGLE_SHEET_ID) {
-    res.status(500).json({ error: 'Missing Google API environment variables' });
-    return false;
-  }
-  return true;
-}
+const GOOGLE_SHEET_ID = "1cyelemAe1Pjaj6qlXp8WhFTyOhF6q1LhpqDeQ5V58bM/edit?gid=545143843#gid=545143843"; // Mets ici l’ID de ton Google Sheet
+const USERS_SHEET_TITLE = "Utilisateurs_ClaimOneOff";
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Méthode non autorisée' });
     return;
   }
-
-  if (!checkEnv(res)) return;
 
   const { societe, nom, prenom, email, motDePasseHash, role = "client" } = req.body;
 
@@ -33,7 +21,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Connexion au Google Sheet
     const doc = new GoogleSpreadsheet(GOOGLE_SHEET_ID);
     await doc.useServiceAccountAuth({
       client_email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -42,14 +29,12 @@ export default async function handler(req, res) {
 
     await doc.loadInfo();
     const sheet = doc.sheetsByTitle[USERS_SHEET_TITLE];
-
     if (!sheet) {
       res.status(500).json({ error: "Feuille utilisateurs introuvable." });
       return;
     }
 
-    // Vérifier si l'utilisateur existe déjà (par email)
-    await sheet.loadCells();
+    // Vérifie si l'email existe déjà
     const rows = await sheet.getRows();
     const exists = rows.some(r => (r.Email || r.email) === email);
 
@@ -58,11 +43,11 @@ export default async function handler(req, res) {
       return;
     }
 
-    // Générer un nouvel ID (auto-incrémenté)
+    // Génère un nouvel ID auto-incrémenté
     const lastId = rows.length > 0 ? Math.max(...rows.map(r => parseInt(r.ID_User, 10) || 0)) : 0;
     const newId = lastId + 1;
 
-    // Préparer la nouvelle ligne
+    // Ajoute la ligne utilisateur (tous les en-têtes sont présents ici)
     await sheet.addRow({
       ID_User: newId,
       Societe: societe,
@@ -82,4 +67,3 @@ export default async function handler(req, res) {
     res.status(500).json({ error: "Erreur serveur. " + error.message });
   }
 }
-
