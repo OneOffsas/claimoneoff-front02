@@ -1,55 +1,52 @@
-// pages/api/register.js
-import { GoogleSpreadsheet } from 'google-spreadsheet';
+import { GoogleSpreadsheet } from "google-spreadsheet";
+
+// On récupère les variables d’environnement
+const SHEET_ID = process.env.SHEET_ID; // L'ID du Google Sheet
+const GOOGLE_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n");
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Méthode non autorisée' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Méthode non autorisée" });
+  }
 
-  // Récupérer les infos du formulaire
   const { nom, prenom, societe, email, motdepasse, role } = req.body;
 
   if (!nom || !prenom || !societe || !email || !motdepasse || !role) {
-    return res.status(400).json({ error: 'Champs manquants' });
+    return res.status(400).json({ error: "Tous les champs sont obligatoires." });
   }
 
   try {
-    // Variables d'environnement Netlify
-    const GOOGLE_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-    const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n');
-    const GOOGLE_SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID;
-
-    // Sécurité : Vérifier que toutes les variables sont bien là
-    if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY || !GOOGLE_SPREADSHEET_ID) {
-      return res.status(500).json({ error: 'Variables d’environnement manquantes.' });
-    }
-
-    // Connexion à Google Sheets
-    const doc = new GoogleSpreadsheet(GOOGLE_SPREADSHEET_ID);
+    const doc = new GoogleSpreadsheet(SHEET_ID);
     await doc.useServiceAccountAuth({
       client_email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
       private_key: GOOGLE_PRIVATE_KEY,
     });
-    await doc.loadInfo();
 
-    // On cible la feuille Utilisateurs_ClaimOneOff
-    const sheet = doc.sheetsByTitle['Utilisateurs_ClaimOneOff'];
-    if (!sheet) {
-      return res.status(500).json({ error: "Feuille 'Utilisateurs_ClaimOneOff' introuvable" });
+    await doc.loadInfo();
+    const sheet = doc.sheetsByTitle["Utilisateurs_ClaimOneOff"];
+
+    // Vérification si l'email existe déjà
+    await sheet.loadCells(); // Optionnel, mais mieux pour éviter les doublons
+    const rows = await sheet.getRows();
+    if (rows.some(r => r.email === email)) {
+      return res.status(400).json({ error: "Cet email existe déjà." });
     }
 
-    // Ajout d'une nouvelle ligne
+    // Ajout du nouvel utilisateur
     await sheet.addRow({
-      Nom: nom,
-      Prénom: prenom,
-      Société: societe,
-      Email: email,
-      MotDePasse: motdepasse, // ⚠️ Le mot de passe doit être hashé en prod !
-      Rôle: role,
-      DateInscription: new Date().toLocaleString('fr-FR'),
+      nom,
+      prenom,
+      societe,
+      email,
+      motdepasse, // Hash le mot de passe côté front idéalement !
+      role,
+      date_creation: new Date().toLocaleString("fr-FR"),
     });
 
-    return res.status(200).json({ status: 'success' });
+    return res.status(200).json({ status: "success" });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'Erreur serveur: ' + err.message });
+    console.error("Erreur Google Sheets:", err);
+    return res.status(500).json({ error: "Erreur serveur: " + err.message });
   }
 }
