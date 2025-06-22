@@ -2,7 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Optionnel : Ajoute tes propres styles globaux ici */
+/* Optionnel : Tu peux rajouter ici tes propres styles, par exemple : */
+/*
 body {
-  @apply bg-gray-100 text-gray-900;
+  font-family: 'Inter', sans-serif;
 }
+*/
