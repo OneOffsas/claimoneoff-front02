@@ -1,41 +1,51 @@
-import { useEffect, useState } from "react";
-import Sidebar from "../components/Sidebar";
-import ClientCockpit from "../components/ClientCockpit";
-import AdminCockpit from "../components/AdminCockpit";
+import React, { useEffect, useState } from "react";
+import StatsCards from "../components/StatsCards";
+import AdminCharts from "../components/AdminCharts";
+import TicketsTable from "../components/AdminTickets";
 
 export default function Dashboard() {
-  const [user, setUser] = useState(null);
-  const [selected, setSelected] = useState("dashboard");
+  const [stats, setStats] = useState({ total: 0, ouvert: 0, resolu: 0 });
+  const [byStatut, setByStatut] = useState([]);
+  const [byDay, setByDay] = useState([]);
+  const [tickets, setTickets] = useState([]);
 
   useEffect(() => {
-    const u = JSON.parse(localStorage.getItem("user") || "null");
-    if (!u) window.location.href = "/login";
-    setUser(u);
+    // Fetch tickets ici, et calcule les stats
+    fetch("/api/getTickets", { method: "POST", body: JSON.stringify({ action: "getTickets", role: "Admin" }) })
+      .then(r => r.json())
+      .then(data => {
+        if (data.tickets) {
+          setTickets(data.tickets);
+          // Calcul des stats
+          setStats({
+            total: data.tickets.length,
+            ouvert: data.tickets.filter(t => t.Statut === "Ouvert").length,
+            resolu: data.tickets.filter(t => t.Statut === "Résolu").length,
+          });
+          // Pie chart par statut
+          const statusMap = {};
+          data.tickets.forEach(t => {
+            statusMap[t.Statut] = (statusMap[t.Statut] || 0) + 1;
+          });
+          setByStatut(Object.entries(statusMap).map(([name, value]) => ({ name, value })));
+          // Bar chart par jour
+          const daysMap = {};
+          data.tickets.forEach(t => {
+            const d = (t.Date_Ouverture || "").substring(0, 10);
+            daysMap[d] = (daysMap[d] || 0) + 1;
+          });
+          setByDay(Object.entries(daysMap).map(([date, Tickets]) => ({ date, Tickets })));
+        }
+      });
   }, []);
 
-  if (!user) return null;
-
-  function handleSelect(key) {
-    if (key === "logout") {
-      localStorage.clear();
-      window.location.href = "/login";
-    } else {
-      setSelected(key);
-    }
-  }
-
   return (
-    <div className="d-flex" style={{ minHeight: "100vh" }}>
-      <Sidebar user={user} onSelect={handleSelect} selected={selected} />
-      <div style={{ flex: 1, background: "#f4f5fb" }}>
-        <div style={{ padding: 32 }}>
-          {user.role === "Admin" ? (
-            <AdminCockpit user={user} section={selected} />
-          ) : (
-            <ClientCockpit user={user} section={selected} />
-          )}
-        </div>
-      </div>
+    <div className="container">
+      <h2 className="mt-5 mb-4 text-center">Tableau de bord Admin</h2>
+      <StatsCards stats={stats} />
+      <AdminCharts byStatut={byStatut} byDay={byDay} />
+      <TicketsTable tickets={tickets} />
     </div>
   );
 }
+
