@@ -17,8 +17,8 @@
     "recharts": "^2.7.2",
     "react-toastify": "^9.1.3",
     "js-sha256": "^0.9.0",
-    "react-bootstrap": "^2.10.2",   // <-- ajout
-    "react-csv": "^2.2.2"           // <-- ajout
+    "react-bootstrap": "^2.10.2",
+    "react-csv": "^2.2.2"
   },
   "devDependencies": {
     "postcss": "8.5.5",
