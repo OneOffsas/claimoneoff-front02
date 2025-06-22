@@ -1,47 +1,48 @@
-import { useMemo } from "react";
+import { useState, useEffect } from "react";
+import TicketDetail from "./TicketDetail";
+import { toast } from "react-toastify";
 
-export default function TicketsTable({ tickets, isAdmin, onExport }) {
-  // Option export CSV
+export default function TicketsTable() {
+  const [tickets, setTickets] = useState([]);
+  const [selected, setSelected] = useState(null);
+
+  useEffect(() => {
+    fetch("/api/admin/tickets")
+      .then(r => r.json())
+      .then(data => setTickets(data.tickets || []))
+      .catch(() => toast.error("Erreur chargement tickets"));
+  }, []);
+
+  if (selected) return <TicketDetail ticket={selected} onBack={() => setSelected(null)} />;
+
   return (
-    <div className="card p-3">
-      <div className="d-flex justify-content-between align-items-center mb-2">
-        <h5 className="mb-0">{isAdmin ? "Tous les tickets" : "Mes tickets"}</h5>
-        {onExport && <button className="btn btn-outline-primary" onClick={onExport}>Exporter CSV</button>}
-      </div>
-      <div style={{overflowX:'auto'}}>
-        <table className="table table-hover align-middle">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Société</th>
-              <th>Commande</th>
-              <th>Problème</th>
-              <th>Transporteur</th>
-              <th>Statut</th>
-              <th>Urgence</th>
-              <th>Date ouverture</th>
+    <div className="overflow-x-auto">
+      <table className="min-w-full bg-white shadow rounded-xl">
+        <thead>
+          <tr>
+            <th className="p-3">#</th>
+            <th className="p-3">Client</th>
+            <th className="p-3">Problématique</th>
+            <th className="p-3">Statut</th>
+            <th className="p-3">Date</th>
+            <th className="p-3">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tickets.map((t, i) => (
+            <tr key={t.id_ticket} className="hover:bg-gray-50">
+              <td className="p-3">{i+1}</td>
+              <td className="p-3">{t.societe}</td>
+              <td className="p-3">{t.problematique}</td>
+              <td className="p-3">{t.statut}</td>
+              <td className="p-3">{t.date_ouverture}</td>
+              <td className="p-3">
+                <button className="text-blue-600 hover:underline" onClick={() => setSelected(t)}>Voir</button>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {tickets.map(t => (
-              <tr key={t.ID_Ticket || t.id_ticket}>
-                <td>{t.ID_Ticket || t.id_ticket}</td>
-                <td>{t.Societe || t.societe}</td>
-                <td>{t.Numero_Commande || t.numero_commande}</td>
-                <td>{t.Problematique || t.problematique}</td>
-                <td>{t.Transporteur || t.transporteur}</td>
-                <td>
-                  <span className={`badge rounded-pill bg-${t.Statut === "Ouvert" ? "warning" : t.Statut === "Résolu" ? "success" : "secondary"}`}>
-                    {t.Statut || t.statut}
-                  </span>
-                </td>
-                <td>{t.Urgence || t.urgence}</td>
-                <td>{(t.Date_Ouverture || t.date_ouverture || "").slice(0,16)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
