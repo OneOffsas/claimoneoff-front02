@@ -37,4 +37,12 @@ export default function TicketDetail({ ticket, onBack }) {
       </div>
       <div className="mt-6">
         <b>Fil de discussion :</b>
-        {/* À adapter*
+        {/* À adapter selon structure ticket */}
+        <div className="bg-gray-50 rounded p-3 mt-2 min-h-[60px]">{ticket.discussion || "Pas encore de message."}</div>
+        <textarea className="mt-3 w-full border rounded p-2" value={comment} onChange={e => setComment(e.target.value)} placeholder="Ajouter un commentaire..." />
+        <button onClick={addComment} className="mt-2 px-3 py-1 rounded bg-blue-600 text-white">Ajouter</button>
+      </div>
+    </div>
+  );
+}
+
