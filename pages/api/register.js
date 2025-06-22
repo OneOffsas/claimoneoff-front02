@@ -1,64 +1,85 @@
-import { GoogleSpreadsheet } from "google-spreadsheet";
-import crypto from "crypto";
+import { GoogleSpreadsheet } from 'google-spreadsheet';
 
-// Variables d'environnement
-const SHEET_ID = process.env.SHEET_ID;
+// Récupérer les variables d'environnement Netlify
 const GOOGLE_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n");
+const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY
+  ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n')
+  : undefined;
+const GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID;
+const USERS_SHEET_TITLE = process.env.GOOGLE_SHEET_USERS_TAB || 'Utilisateurs_ClaimOneOff';
+
+// Vérifier que toutes les variables sont bien présentes
+function checkEnv(res) {
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY || !GOOGLE_SHEET_ID) {
+    res.status(500).json({ error: 'Missing Google API environment variables' });
+    return false;
+  }
+  return true;
+}
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Méthode non autorisée" });
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: 'Méthode non autorisée' });
+    return;
   }
 
-  const { societe, nom, prenom, email, motdepasse, role } = req.body;
+  if (!checkEnv(res)) return;
 
-  if (!societe || !nom || !prenom || !email || !motdepasse || !role) {
-    return res.status(400).json({ error: "Tous les champs sont obligatoires." });
+  const { societe, nom, prenom, email, motDePasseHash, role = "client" } = req.body;
+
+  if (!societe || !nom || !prenom || !email || !motDePasseHash) {
+    res.status(400).json({ error: "Champs obligatoires manquants." });
+    return;
   }
 
   try {
-    // Connexion à Google Sheets
-    const doc = new GoogleSpreadsheet(SHEET_ID);
+    // Connexion au Google Sheet
+    const doc = new GoogleSpreadsheet(GOOGLE_SHEET_ID);
     await doc.useServiceAccountAuth({
       client_email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
       private_key: GOOGLE_PRIVATE_KEY,
     });
-    await doc.loadInfo();
-    const sheet = doc.sheetsByTitle["Utilisateurs_ClaimOneOff"];
 
-    // Vérifier si l'email existe déjà
-    const rows = await sheet.getRows();
-    if (rows.some(r => (r.Email || "").toLowerCase() === email.toLowerCase())) {
-      return res.status(400).json({ error: "Cet email existe déjà." });
+    await doc.loadInfo();
+    const sheet = doc.sheetsByTitle[USERS_SHEET_TITLE];
+
+    if (!sheet) {
+      res.status(500).json({ error: "Feuille utilisateurs introuvable." });
+      return;
     }
 
-    // Générer un ID unique (timestamp + 3 chiffres aléatoires)
-    const ID_User = Date.now().toString() + Math.floor(Math.random() * 1000).toString().padStart(3, "0");
+    // Vérifier si l'utilisateur existe déjà (par email)
+    await sheet.loadCells();
+    const rows = await sheet.getRows();
+    const exists = rows.some(r => (r.Email || r.email) === email);
 
-    // Hash du mot de passe (SHA256)
-    const MotDePasse_Hash = crypto.createHash("sha256").update(motdepasse).digest("hex");
+    if (exists) {
+      res.status(400).json({ error: "Cet email existe déjà." });
+      return;
+    }
 
-    // Date inscription (format FR)
-    const Date_Inscription = new Date().toLocaleString("fr-FR");
+    // Générer un nouvel ID (auto-incrémenté)
+    const lastId = rows.length > 0 ? Math.max(...rows.map(r => parseInt(r.ID_User, 10) || 0)) : 0;
+    const newId = lastId + 1;
 
+    // Préparer la nouvelle ligne
     await sheet.addRow({
-      ID_User,
+      ID_User: newId,
       Societe: societe,
       Nom: nom,
       Prenom: prenom,
       Email: email,
-      MotDePasse_Hash,
+      MotDePasse_Hash: motDePasseHash,
       Role: role,
-      Actif: "Oui",
-      Date_Inscription,
-      Derniere_Connexion: "", // sera rempli lors de la connexion
+      Actif: 1,
+      Date_Inscription: new Date().toISOString().slice(0, 10),
+      Derniere_Connexion: "",
     });
 
-    return res.status(200).json({ status: "success" });
-  } catch (err) {
-    console.error("Erreur Google Sheets:", err);
-    return res.status(500).json({ error: "Erreur serveur: " + err.message });
+    res.status(200).json({ status: "success" });
+  } catch (error) {
+    console.error("Erreur inscription:", error);
+    res.status(500).json({ error: "Erreur serveur. " + error.message });
   }
 }
 
