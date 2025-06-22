@@ -1,46 +1,51 @@
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Méthode non autorisée" });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method Not Allowed' });
+  }
+
+  // On récupère les infos du body
+  const { Societe, Nom, Prenom, Email, MotDePasse_Hash, Role } = req.body;
+
+  if (!Societe || !Nom || !Prenom || !Email || !MotDePasse_Hash || !Role) {
+    return res.status(400).json({ message: 'Champs obligatoires manquants' });
   }
 
   try {
-    // Récupère les variables d'environnement
-    const sheetId = process.env.GOOGLE_SHEET_ID;
-    const serviceAccount = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
-
-    // Initialise Google Spreadsheet
-    const doc = new GoogleSpreadsheet(sheetId);
-    await doc.useServiceAccountAuth(serviceAccount);
+    // Authentification avec les variables d'environnement
+    const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID);
+    await doc.useServiceAccountAuth({
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    });
     await doc.loadInfo();
-
-    // Charge la bonne feuille
     const sheet = doc.sheetsByTitle['Utilisateurs_ClaimOneOff'];
 
-    // Récupère les infos du body
-    const { societe, nom, prenom, email, motDePasse, role } = req.body;
+    // Génère un nouvel ID (option simplifiée)
+    const rows = await sheet.getRows();
+    const lastID = rows.length > 0 ? parseInt(rows[rows.length - 1].ID_User, 10) : 0;
+    const newID = (lastID + 1).toString();
 
-    // Création du hash
-    // (Idéalement, fais-le côté client AVANT d'envoyer au serveur, sinon on peut le faire ici avec crypto)
+    const dateNow = new Date().toISOString();
 
-    // Insère dans la feuille
+    // Ajoute la ligne
     await sheet.addRow({
-      ID_User: '', // On laisse vide, Google Sheets gère l'auto-numérotation
-      Societe: societe,
-      Nom: nom,
-      Prenom: prenom,
-      Email: email,
-      MotDePasse_Hash: motDePasse, // Passe ici le hash !
-      Role: role,
-      Actif: 1,
-      Date_Inscription: new Date().toISOString(),
-      Derniere_Connexion: ''
+      ID_User: newID,
+      Societe,
+      Nom,
+      Prenom,
+      Email,
+      MotDePasse_Hash,
+      Role,
+      Actif: "1",
+      Date_Inscription: dateNow,
+      Derniere_Connexion: "",
     });
 
-    res.status(200).json({ message: "Inscription réussie" });
-  } catch (err) {
-    console.error('Erreur Google Sheets:', err);
-    res.status(500).json({ error: 'Erreur serveur', details: err.message });
+    return res.status(200).json({ message: 'Inscription réussie' });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Erreur serveur', error: error.message });
   }
 }
