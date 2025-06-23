@@ -1,46 +1,53 @@
-import { sha256 } from 'js-sha256';
+import { GoogleSpreadsheet } from 'google-spreadsheet';
+import bcrypt from 'bcryptjs';
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).end('Method Not Allowed');
-
-  // Prends les champs attendus depuis le body
-  const { email, password, nom, prenom, societe } = req.body;
-
-  // Empêche l’envoi de champs vides
-  if (!email || !password || !nom || !prenom || !societe) {
-    return res.status(400).json({ error: "Champs requis manquants (email, mot de passe, nom, prénom, société)" });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Méthode non autorisée' });
   }
 
-  // Hash du mot de passe pour la sécurité
-  const passwordHash = sha256(password);
+  const { societe, nom, prenom, email, password } = req.body;
 
-  const scriptUrl = "https://script.google.com/macros/s/AKfycbxVsHNzAtfR55M3t7A-vk7RAZz2EO6fqzxKmlUACnNWnauWuQAt3ecSuPiNSDvoCI5-lw/exec";
-
-  // Envoie les bons champs, dont passwordHash (pas password !)
-  let resp = await fetch(scriptUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    },
-    body: JSON.stringify({
-      email,
-      passwordHash,
-      nom,
-      prenom,
-      societe
-    }),
-  });
-
-  const raw = await resp.text();
-  let data;
-  try { data = JSON.parse(raw); } catch (e) {
-    return res.status(500).json({ error: `Réponse non JSON du Script: ${raw}` });
+  if (!societe || !nom || !prenom || !email || !password) {
+    return res.status(400).json({ error: 'Tous les champs sont obligatoires' });
   }
 
-  if (data.status === 'error') {
-    return res.status(400).json({ error: data.message });
-  }
+  try {
+    const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID);
 
-  res.status(200).json(data);
+    await doc.useServiceAccountAuth({
+      client_email: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT).client_email,
+      private_key: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT).private_key.replace(/\\n/g, '\n'),
+    });
+
+    await doc.loadInfo();
+    const sheet = doc.sheetsByIndex[0];
+
+    const rows = await sheet.getRows();
+    const userExists = rows.some(row => row.Email === email);
+    if (userExists) {
+      return res.status(409).json({ error: 'Utilisateur déjà inscrit' });
+    }
+
+    const hash = await bcrypt.hash(password, 10);
+    const now = new Date().toLocaleString('fr-FR');
+
+    await sheet.addRow({
+      ID_User: rows.length + 1,
+      Societe: societe,
+      Nom: nom,
+      Prenom: prenom,
+      Email: email,
+      MotDePasse_Hash: hash,
+      Role: 'Client',
+      Actif: 'Oui',
+      Date_Inscription: now,
+      Derniere_Connexion: '',
+    });
+
+    res.status(201).json({ message: 'Utilisateur inscrit avec succès' });
+  } catch (error) {
+    console.error('Erreur inscription :', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
 }
