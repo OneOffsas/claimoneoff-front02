@@ -1,42 +1,67 @@
-import { GoogleSpreadsheet } from 'google-spreadsheet';
+import React, { useState } from 'react';
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).json({ message: "Méthode non autorisée" });
+export default function Register() {
+  const [form, setForm] = useState({
+    societe: '',
+    nom: '',
+    prenom: '',
+    email: '',
+    password: ''
+  });
+  const [message, setMessage] = useState('');
 
-  const { societe, nom, prenom, email, motDePasse, role } = req.body;
+  const handleChange = e => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
-  // Debug : tout afficher dans la console
-  console.log("Données reçues:", req.body);
-
-  if (!societe || !nom || !prenom || !email || !motDePasse) {
-    return res.status(400).json({ message: "Champ obligatoire manquant" });
-  }
-
-  try {
-    const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID);
-    await doc.useServiceAccountAuth({
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+  const handleSubmit = async e => {
+    e.preventDefault();
+    setMessage('');
+    // Vérifie tous les champs
+    if (!form.societe || !form.nom || !form.prenom || !form.email || !form.password) {
+      setMessage('Merci de remplir tous les champs obligatoires.');
+      return;
+    }
+    const res = await fetch('/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
     });
-    await doc.loadInfo();
-    const sheet = doc.sheetsByTitle['Utilisateurs_ClaimOneOff'];
+    const data = await res.json();
+    if (res.ok) {
+      setMessage('✅ Inscription réussie ! Vous pouvez vous connecter.');
+      setForm({ societe: '', nom: '', prenom: '', email: '', password: '' });
+    } else {
+      setMessage(`❌ ${data.error || 'Une erreur est survenue.'}`);
+    }
+  };
 
-    await sheet.addRow({
-      ID_User: Date.now().toString(),
-      Societe: societe,
-      Nom: nom,
-      Prenom: prenom,
-      Email: email,
-      MotDePasse_Hash: motDePasse,
-      Role: role || "client",
-      Actif: "1",
-      Date_Inscription: new Date().toISOString(),
-      Derniere_Connexion: ""
-    });
-    res.status(200).json({ message: "Inscription réussie" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Erreur serveur: " + err.message });
-  }
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-violet-800 to-purple-900">
+      <form className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md space-y-4" onSubmit={handleSubmit}>
+        <h2 className="text-2xl font-bold text-center text-violet-700 mb-2">Créer un compte</h2>
+        <input name="societe" placeholder="Société" className="input" value={form.societe} onChange={handleChange} />
+        <input name="nom" placeholder="Nom" className="input" value={form.nom} onChange={handleChange} />
+        <input name="prenom" placeholder="Prénom" className="input" value={form.prenom} onChange={handleChange} />
+        <input name="email" placeholder="E-mail" type="email" className="input" value={form.email} onChange={handleChange} />
+        <input name="password" placeholder="Mot de passe" type="password" className="input" value={form.password} onChange={handleChange} />
+        <button className="w-full bg-violet-700 hover:bg-violet-800 text-white rounded-xl py-3 mt-2 font-semibold transition">S'inscrire</button>
+        {message && <div className="text-center mt-2">{message}</div>}
+      </form>
+      <style jsx>{`
+        .input {
+          width: 100%;
+          padding: 10px;
+          margin-top: 8px;
+          border-radius: 0.75rem;
+          border: 1px solid #d1d5db;
+          outline: none;
+          font-size: 1rem;
+        }
+        .input:focus {
+          border-color: #7c3aed;
+        }
+      `}</style>
+    </div>
+  );
 }
-
