@@ -37,16 +37,10 @@ export default async function handler(req, res) {
 
     // Ajouter une nouvelle ligne dans la feuille
     await sheet.addRow({
-      ID_User: id,
       Societe: societe,
       Nom: nom,
       Prenom: prenom,
-      Email: email,
-      MotDePasse_Hash: passwordHash,
-      Role: 'Client',
-      Actif: 'Oui',
-      Date_Inscription: new Date().toISOString(),
-      Derniere_Connexion: ''
+      MotDePasse_Hash: passwordHash
     });
 
     return res.status(200).json({ success: true, message: "Inscription réussie !" });
