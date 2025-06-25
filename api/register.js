@@ -1,4 +1,6 @@
 import { GoogleSpreadsheet } from 'google-spreadsheet';
+import { promises as fs } from 'fs';
+import path from 'path';
 import bcrypt from 'bcryptjs';
 
 export default async function handler(req, res) {
@@ -6,44 +8,33 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Méthode non autorisée' });
   }
 
-  const { societe, nom, prenom, email, password } = req.body;
+  const { email, password, societe, nom, prenom } = req.body;
 
-  // Vérification des champs obligatoires
-  if (!societe || !nom || !prenom || !email || !password) {
-    return res.status(400).json({ error: 'Tous les champs sont requis.' });
+  if (!email || !password || !societe || !nom || !prenom) {
+    return res.status(400).json({ error: 'Champs obligatoires manquants' });
   }
 
   try {
-    const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID);
+    const credentialsPath = path.join(process.cwd(), 'credentials.json');
+    const credentialsContent = await fs.readFile(credentialsPath, 'utf-8');
+    const credentials = JSON.parse(credentialsContent);
 
-    await doc.useServiceAccountAuth({
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.replace(/\\n/g, '\n'),
-    });
-
+    const doc = new GoogleSpreadsheet('1cyelemAe1Pjaj6qlXp8WhFTyOhF6q1LhpqDeQ5V58bM');
+    await doc.useServiceAccountAuth(credentials);
     await doc.loadInfo();
-    const sheet = doc.sheetsByTitle['Utilisateurs_ClaimOneOff'];
 
-    await sheet.loadHeaderRow();
+    const sheet = doc.sheetsByTitle['Utilisateurs_ClaimOneOff'];
     const rows = await sheet.getRows();
 
-    // Vérifie si l'email existe déjà
-    const emailExiste = rows.some(row => row.Email === email);
-    if (emailExiste) {
-      return res.status(400).json({ error: 'Email déjà utilisé.' });
+    const userExists = rows.some(row => row.Email === email);
+    if (userExists) {
+      return res.status(400).json({ error: 'Utilisateur déjà existant' });
     }
 
-    // Hachage du mot de passe
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Création d’un nouvel ID
-    const newId = rows.length > 0
-      ? Math.max(...rows.map(r => parseInt(r.ID_User || '0'))) + 1
-      : 1;
-
-    // Ajout dans la feuille
     await sheet.addRow({
-      ID_User: newId,
+      ID_User: Date.now().toString(),
       Societe: societe,
       Nom: nom,
       Prenom: prenom,
@@ -55,10 +46,12 @@ export default async function handler(req, res) {
       Derniere_Connexion: '',
     });
 
-    return res.status(200).json({ message: 'Inscription réussie.' });
+    res.status(200).json({ message: 'Utilisateur enregistré avec succès' });
+
   } catch (error) {
     console.error('Erreur serveur :', error);
-    return res.status(500).json({ error: 'Erreur serveur.' });
+    res.status(500).json({ error: 'Erreur serveur lors de l\'inscription' });
   }
 }
+
 
